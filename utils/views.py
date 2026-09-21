@@ -318,6 +318,7 @@ def get_help_embed(category: str = "overview") -> discord.Embed:
             color=0xFEE75C
         )
         embed.add_field(name="📊 `/mystats [@member]`", value="Full profile: Level, XP progress bar, coins, streaks, badges, messages, and voice time.", inline=False)
+        embed.add_field(name="🪙 `/balance", value="Check your coin balance.", inline=False)
         embed.add_field(name="🏆 `/leaderboard [category]`", value="Live leaderboards for XP, Coins, Messages, Voice time, and Check-ins.", inline=False)
         embed.add_field(name="🏁 `/season [month]`", value="Monthly competition standings + previous month champion 👑.", inline=False)
         embed.add_field(name="🗺️ `/quests` & `/quest_claim <id>`", value="View and claim daily quest rewards (+30–60 🪙 / XP).", inline=False)

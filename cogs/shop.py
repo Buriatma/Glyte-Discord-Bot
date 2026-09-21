@@ -40,6 +40,13 @@ class ShopCog(commands.Cog):
         view = ShopView(items, interaction.user.id)
         await interaction.followup.send(embed=embed, view=view)
 
+    @app_commands.command(name="balance", description="Check your coin balance")
+    async def balance(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        u = await get_user(interaction.user.id)
+        coins = u.get("coins", 0)
+        await interaction.followup.send(f"Your balance: **{coins} coins**")
+
     @app_commands.command(name="buy", description="Buy an item from the shop with coins")
     @app_commands.describe(item_id="Item id from /shop (e.g. freeze, xp2x, spinticket, vip)")
     async def buy(self, interaction: discord.Interaction, item_id: str):

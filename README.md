@@ -90,6 +90,7 @@
 | 🗺️ `/quests` | Today's quests + progress |
 | 🎉 `/quest_claim <id>` | Claim a finished quest |
 | 🏪 `/shop` | Interactive rewards & booster shop with 1-click dropdown 🛒 |
+| 🪙 `/balance` | Check your coin balance |
 | 🛍️ `/buy <item>` | Buy items, boosters or VIP status with coins |
 | ⚡ `/use <item>` | Activate consumables (2x XP Booster, Spin Ticket, redeem perks) |
 | 🎒 `/inventory` | Your owned items |
