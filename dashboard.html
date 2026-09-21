@@ -2,470 +2,1470 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🤖 Glyte Dashboard 📊</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>🤖 Glyte Workspace Hub · Live Dashboard 📊</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root{
-  --bg:#0b0e14; --card:#151a26; --card2:#1b2233; --line:#2a3350;
-  --txt:#e8ecf5; --dim:#8b93b0; --acc:#5865F2; --acc2:#EB459E;
-  --good:#57F287; --bad:#ED4245; --gold:#FEE75C;
+  --bg: #090c15;
+  --card: rgba(21, 26, 38, 0.75);
+  --card2: rgba(27, 34, 51, 0.85);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --line: #242c44;
+  --txt: #f0f3fa;
+  --dim: #949db8;
+  --acc: #5865F2;
+  --acc-glow: rgba(88, 101, 242, 0.35);
+  --acc2: #EB459E;
+  --good: #57F287;
+  --good-bg: rgba(87, 242, 135, 0.12);
+  --bad: #ED4245;
+  --bad-bg: rgba(237, 66, 69, 0.12);
+  --gold: #FEE75C;
+  --gold-bg: rgba(254, 231, 92, 0.12);
+  --radius: 16px;
 }
+
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
-.blob{position:fixed;border-radius:50%;filter:blur(110px);opacity:.35;z-index:0;animation:drift 14s ease-in-out infinite alternate}
-.b1{width:420px;height:420px;background:#5865F2;top:-120px;left:-120px}
-.b2{width:380px;height:380px;background:#EB459E;bottom:-140px;right:-100px;animation-delay:-5s}
-.b3{width:260px;height:260px;background:#57F287;top:40%;left:60%;opacity:.18;animation-delay:-9s}
-@keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(60px,40px) scale(1.15)}}
-.flo{position:fixed;z-index:0;opacity:.5;animation:floaty 7s ease-in-out infinite;pointer-events:none;font-size:26px}
-@keyframes floaty{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-26px) rotate(8deg)}}
-.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:24px 16px 60px}
-header{text-align:center;padding:26px 10px;animation:drop .7s ease both}
-@keyframes drop{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:none}}
-h1{font-size:clamp(28px,5vw,46px);background:linear-gradient(90deg,#5865F2,#EB459E,#FEE75C,#57F287,#5865F2);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
-@keyframes shine{to{background-position:300% 0}}
-.sub{color:var(--dim);margin-top:6px}
-.who{display:inline-flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--acc);padding:6px 16px;border-radius:99px;font-size:14px;margin-top:12px;animation:pop .6s ease both}
-.crown{background:linear-gradient(135deg,#8a6d1b,#FEE75C);color:#3a2f00;font-weight:800;padding:3px 12px;border-radius:99px;font-size:12px;animation:pulse2 2s infinite}
-@keyframes pulse2{0%,100%{box-shadow:0 0 0 0 rgba(254,231,92,.5)}50%{box-shadow:0 0 0 7px rgba(254,231,92,0)}}
-.live{display:inline-flex;align-items:center;gap:6px;background:#12351f;color:var(--good);border:1px solid #1f6b3a;padding:4px 12px;border-radius:99px;font-size:13px;margin-top:10px}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--good);animation:pulse 1.6s infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(87,242,135,.6)}50%{box-shadow:0 0 0 8px rgba(87,242,135,0)}}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:22px 0}
-.tab{border:1px solid var(--line);background:var(--card);color:var(--txt);padding:10px 16px;border-radius:12px;cursor:pointer;font-size:14px;transition:.25s;animation:pop .5s ease both}
-@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
-.tab:hover{transform:translateY(-2px);border-color:var(--acc)}
-.tab.on{background:linear-gradient(135deg,var(--acc),var(--acc2));border-color:transparent;box-shadow:0 6px 22px rgba(88,101,242,.45)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px}
-.card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:18px;animation:rise .6s ease both;animation-delay:calc(var(--i,0)*.07s);transition:.25s}
-@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-.card:hover{transform:translateY(-4px);border-color:var(--acc2);box-shadow:0 10px 30px rgba(235,69,158,.18)}
-.card .e{font-size:28px;animation:bounce 2.4s ease-in-out infinite}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.card .n{font-size:28px;font-weight:800;margin:6px 0 2px}
-.card .l{color:var(--dim);font-size:13px}
-.panel{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px;animation:rise .5s ease both}
-.panel h2{margin-bottom:14px;font-size:19px}
-.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-input,select,textarea{background:#0e1320;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:14px;outline:none;transition:.2s}
-input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(88,101,242,.25)}
-button{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;cursor:pointer;transition:.2s}
-button:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(88,101,242,.4)}
-button:active{transform:scale(.97)}
-button.ghost{background:transparent;border:1px solid var(--line)}
-button.good{background:linear-gradient(135deg,#2ea86a,#57F287)}
-button.bad{background:linear-gradient(135deg,#b03234,#ED4245)}
-button.sm{padding:6px 12px;font-size:12px}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th{color:var(--dim);text-align:left;padding:10px;border-bottom:1px solid var(--line);font-weight:600}
-td{padding:10px;border-bottom:1px solid #1c2338}
-tr{animation:fadein .4s ease both}
-@keyframes fadein{from{opacity:0}to{opacity:1}}
-tr:hover td{background:rgba(88,101,242,.08)}
-.bar{height:10px;background:#0e1320;border-radius:99px;overflow:hidden;min-width:120px}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2),var(--gold));border-radius:99px;animation:grow 1s ease both}
-@keyframes grow{from{width:0}}
-.chip{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700}
-.c-open{background:#12351f;color:var(--good)} .c-claimed{background:#3d2f07;color:var(--gold)}
-.c-done{background:#222c44;color:var(--dim)} .c-pending{background:#3d2f07;color:var(--gold)}
-.c-approved{background:#12351f;color:var(--good)} .c-rejected{background:#3d1a1a;color:var(--bad)}
-.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.item{background:#0e1320;border:1px solid var(--line);border-radius:14px;padding:14px;animation:pop .4s ease both;transition:.2s}
-.item:hover{border-color:var(--gold);transform:translateY(-3px)}
-.item .cost{color:var(--gold);font-weight:800}
-.muted{color:var(--dim);font-size:13px}
-.badge{display:inline-block;background:#222c44;border:1px solid var(--line);border-radius:99px;padding:4px 12px;margin:3px;font-size:13px;animation:pop .4s ease both}
-.qrow{background:#0e1320;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;animation:rise .4s ease both}
-.logs{background:#05070c;border:1px solid var(--line);border-radius:12px;padding:14px;font-family:monospace;font-size:12px;max-height:380px;overflow-y:auto;white-space:pre-wrap}
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card2);border:1px solid var(--acc);padding:12px 22px;border-radius:12px;transition:.35s;z-index:99;opacity:0;max-width:90vw}
-#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-#lock{display:none;text-align:center;padding:80px 20px}
-#lock .big{font-size:70px;animation:bounce 2s infinite}
-canvas{max-height:300px}
-footer{text-align:center;color:var(--dim);margin-top:30px;font-size:13px}
-.sec{display:none}.sec.on{display:block;animation:fadein .35s ease}
-::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:#0e1320}::-webkit-scrollbar-thumb{background:linear-gradient(var(--acc),var(--acc2));border-radius:99px}
+html, body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ambient Background Blobs */
+.blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.28;
+  z-index: 0;
+  pointer-events: none;
+  animation: drift 16s ease-in-out infinite alternate;
+}
+.b1 { width: clamp(280px, 40vw, 520px); height: clamp(280px, 40vw, 520px); background: #5865F2; top: -140px; left: -140px; }
+.b2 { width: clamp(240px, 35vw, 460px); height: clamp(240px, 35vw, 460px); background: #EB459E; bottom: -120px; right: -120px; animation-delay: -6s; }
+.b3 { width: clamp(200px, 30vw, 360px); height: clamp(200px, 30vw, 360px); background: #57F287; top: 35%; left: 65%; opacity: 0.14; animation-delay: -10s; }
+@keyframes drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(50px, 35px) scale(1.12); } }
+
+/* Floating Micro Emojis */
+.flo {
+  position: fixed;
+  z-index: 0;
+  opacity: 0.35;
+  animation: floaty 8s ease-in-out infinite;
+  pointer-events: none;
+  font-size: clamp(20px, 3vw, 28px);
+}
+@keyframes floaty { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-22px) rotate(6deg); } }
+
+/* Layout Wrap */
+.wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 16px 14px 60px;
+}
+
+@media(min-width: 768px) {
+  .wrap { padding: 24px 24px 80px; }
+}
+
+/* Header */
+header {
+  text-align: center;
+  padding: 18px 8px 12px;
+  animation: drop .6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes drop { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: none; } }
+
+h1 {
+  font-size: clamp(24px, 5.5vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, #5865F2, #EB459E, #FEE75C, #57F287, #5865F2);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine 7s linear infinite;
+}
+@keyframes shine { to { background-position: 300% 0; } }
+
+.sub {
+  color: var(--dim);
+  font-size: clamp(13px, 2vw, 15px);
+  margin-top: 6px;
+}
+
+.header-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.who {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card2);
+  border: 1px solid rgba(88, 101, 242, 0.4);
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: clamp(12px, 1.8vw, 14px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.crown {
+  background: linear-gradient(135deg, #a67c1e, #FEE75C);
+  color: #2b2100;
+  font-weight: 800;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 12px rgba(254, 231, 92, 0.4);
+}
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(18, 53, 31, 0.8);
+  color: var(--good);
+  border: 1px solid rgba(87, 242, 135, 0.3);
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--good);
+  animation: pulse 1.6s infinite;
+}
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(87, 242, 135, 0.6); } 50% { box-shadow: 0 0 0 7px rgba(87, 242, 135, 0); } }
+
+/* Touch-Friendly Responsive Tabs */
+.tabs-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 2px 14px;
+  margin: 12px 0 18px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs-scroll-container::-webkit-scrollbar { display: none; }
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: max-content;
+  margin: 0 auto;
+}
+
+@media(min-width: 992px) {
+  .tabs { justify-content: center; flex-wrap: wrap; }
+  .tabs-scroll-container { overflow-x: visible; }
+}
+
+.tab {
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--txt);
+  padding: 9px 15px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tab:hover {
+  transform: translateY(-2px);
+  border-color: var(--acc);
+  color: #fff;
+}
+.tab.on {
+  background: linear-gradient(135deg, var(--acc), var(--acc2));
+  border-color: transparent;
+  box-shadow: 0 6px 20px var(--acc-glow);
+  color: #fff;
+}
+
+/* Grids & Cards */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+@media(min-width: 640px) {
+  .grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  transition: transform .22s, border-color .22s, box-shadow .22s;
+}
+.card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(235, 69, 158, 0.5);
+  box-shadow: 0 12px 30px rgba(235, 69, 158, 0.16);
+}
+.card .e { font-size: 26px; }
+.card .n { font-size: clamp(22px, 3.5vw, 28px); font-weight: 800; margin: 4px 0 2px; }
+.card .l { color: var(--dim); font-size: 12.5px; font-weight: 500; }
+
+/* Panels */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: clamp(16px, 2.5vw, 22px);
+  margin-bottom: 18px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  animation: rise .45s ease both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+.panel h2 {
+  font-size: clamp(16px, 2vw, 19px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Forms & Responsive Controls */
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+@media(max-width: 540px) {
+  .row.stackable {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .row.stackable input,
+  .row.stackable select,
+  .row.stackable button {
+    width: 100% !important;
+  }
+}
+
+input, select, textarea {
+  background: rgba(14, 19, 32, 0.85);
+  border: 1px solid var(--line);
+  color: var(--txt);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.25);
+}
+
+button {
+  background: linear-gradient(135deg, var(--acc), var(--acc2));
+  border: none;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform .18s, box-shadow .18s, opacity .18s;
+}
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px var(--acc-glow);
+}
+button:active { transform: scale(0.98); }
+button.ghost {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  color: var(--txt);
+}
+button.ghost:hover {
+  border-color: var(--acc);
+  background: rgba(88, 101, 242, 0.1);
+}
+button.good {
+  background: linear-gradient(135deg, #1f9a56, #57F287);
+  color: #062b14;
+  font-weight: 700;
+}
+button.bad {
+  background: linear-gradient(135deg, #ad2a2c, #ED4245);
+}
+button.sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+/* Table Wrap for Zero Breakage */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(11, 15, 25, 0.6);
+  margin-top: 8px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+th {
+  color: var(--dim);
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+  background: rgba(17, 23, 38, 0.8);
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+tr:hover td {
+  background: rgba(88, 101, 242, 0.06);
+}
+
+/* Progress Bars */
+.bar {
+  height: 10px;
+  background: rgba(14, 19, 32, 0.9);
+  border-radius: 99px;
+  overflow: hidden;
+  min-width: 100px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--acc), var(--acc2), var(--gold));
+  border-radius: 99px;
+  transition: width .8s ease;
+}
+
+/* Chips & Badges */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.c-open { background: var(--good-bg); color: var(--good); border: 1px solid rgba(87, 242, 135, 0.3); }
+.c-claimed { background: var(--gold-bg); color: var(--gold); border: 1px solid rgba(254, 231, 92, 0.3); }
+.c-done { background: rgba(148, 157, 184, 0.15); color: var(--dim); }
+.c-pending { background: var(--gold-bg); color: var(--gold); border: 1px solid rgba(254, 231, 92, 0.3); }
+.c-approved { background: var(--good-bg); color: var(--good); border: 1px solid rgba(87, 242, 135, 0.3); }
+.c-rejected { background: var(--bad-bg); color: var(--bad); border: 1px solid rgba(237, 66, 69, 0.3); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(34, 44, 68, 0.7);
+  border: 1px solid var(--card-border);
+  border-radius: 99px;
+  padding: 5px 13px;
+  margin: 3px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+/* Shop Grid */
+.shop {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media(min-width: 480px) {
+  .shop { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+
+.item {
+  background: rgba(14, 19, 32, 0.75);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 14px;
+  transition: transform .2s, border-color .2s;
+}
+.item:hover {
+  border-color: rgba(254, 231, 92, 0.5);
+  transform: translateY(-2px);
+}
+.item .cost { color: var(--gold); font-weight: 800; font-size: 14px; }
+.muted { color: var(--dim); font-size: 13px; }
+
+/* Item Rows & Logs */
+.qrow {
+  background: rgba(14, 19, 32, 0.7);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.logs {
+  background: #04060a;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 380px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  color: #c9d1d9;
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--card2);
+  border: 1px solid var(--acc);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  padding: 12px 24px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all .35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 999;
+  opacity: 0;
+  max-width: 90vw;
+  backdrop-filter: blur(16px);
+  text-align: center;
+}
+#toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+#lock {
+  display: none;
+  text-align: center;
+  padding: 100px 20px;
+}
+#lock .big { font-size: 64px; margin-bottom: 12px; }
+
+canvas { max-height: 280px; width: 100% !important; }
+
+footer {
+  text-align: center;
+  color: var(--dim);
+  margin-top: 40px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.sec { display: none; }
+.sec.on { display: block; animation: fadein .3s ease; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+/* Quick Search Input */
+.search-input {
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 10px;
+  background: rgba(14, 19, 32, 0.9);
+}
 </style>
 </head>
 <body>
 <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
-<span class="flo" style="top:12%;left:6%">🤖</span><span class="flo" style="top:22%;right:8%;animation-delay:-2s">🏆</span>
-<span class="flo" style="top:60%;left:3%;animation-delay:-4s">🪙</span><span class="flo" style="bottom:14%;right:5%;animation-delay:-1s">🔥</span>
-<span class="flo" style="bottom:30%;left:12%;animation-delay:-3s">🎮</span><span class="flo" style="top:45%;right:12%;animation-delay:-5s">✨</span>
+<span class="flo" style="top:10%;left:5%">🤖</span><span class="flo" style="top:18%;right:6%;animation-delay:-2s">🏆</span>
+<span class="flo" style="top:55%;left:4%;animation-delay:-4s">🪙</span><span class="flo" style="bottom:12%;right:4%;animation-delay:-1s">🔥</span>
+<span class="flo" style="bottom:28%;left:10%;animation-delay:-3s">🎮</span><span class="flo" style="top:42%;right:10%;animation-delay:-5s">✨</span>
 
-<div id="lock"><div class="big">🔒</div><h2>Bad or expired link</h2><p class="muted">Run <b>/dashboard</b> in Discord for a fresh magic link ✨</p></div>
+<div id="lock">
+  <div class="big">🔒</div>
+  <h2>Link Expired or Invalid</h2>
+  <p class="muted" style="margin-top:8px">Run <b>/dashboard</b> inside your Discord server to generate an instant access magic link ✨</p>
+</div>
 
 <div class="wrap" id="app" style="display:none">
 <header>
   <h1>🤖 Glyte Dashboard 📊</h1>
-  <div class="sub">Auto-logged-in via Discord — this link knows it's you ✨</div>
-  <div><span class="who" id="who">👤 …</span></div>
-  <div><span class="live"><span class="dot"></span>LIVE · <span id="today"></span></span></div>
+  <div class="sub">Activity · Attendance · Gamification · Economy Hub ✨</div>
+  <div class="header-badges">
+    <span class="who" id="who">👤 Connecting…</span>
+    <span class="live"><span class="dot"></span>LIVE · <span id="today"></span></span>
+  </div>
 </header>
 
-<div class="tabs" id="tabs"></div>
+<div class="tabs-scroll-container">
+  <div class="tabs" id="tabs"></div>
+</div>
 
-<!-- 🙋 ME -->
+<!-- 🙋 ME (PERSONAL HUB) -->
 <div class="sec" id="s-me">
-  <div class="panel"><h2 id="meTitle">🙋 Hey!</h2>
-    <div class="bar" style="margin-bottom:6px"><i id="meBar" style="width:0%"></i></div>
+  <div class="panel">
+    <h2 id="meTitle">🙋 Hey!</h2>
+    <div class="bar" style="margin: 8px 0 6px"><i id="meBar" style="width:0%"></i></div>
     <p class="muted" id="meLvl"></p>
-    <div class="grid" id="meCards" style="margin-top:14px"></div>
-    <h2 style="margin-top:8px">🏅 My badges</h2><div id="meBadges"></div>
+    <div class="grid" id="meCards" style="margin-top:16px"></div>
+    <h2 style="margin-top:16px">🏅 My Badges</h2>
+    <div id="meBadges"></div>
   </div>
 </div>
 
 <!-- 🗓️ MY DAYS -->
 <div class="sec" id="s-medays">
-  <div class="panel"><h2>🗓️ My attendance <span id="meAttPct" class="muted"></span></h2>
-    <div class="row"><select id="meAttDays"><option value="7">Last 7 days</option><option value="14" selected>Last 14 days</option><option value="30">Last 30 days</option></select>
-    <button onclick="loadMyAtt()">🔄 Load</button></div>
+  <div class="panel">
+    <h2>🗓️ My Attendance <span id="meAttPct" class="muted"></span></h2>
+    <div class="row stackable">
+      <select id="meAttDays">
+        <option value="7">Last 7 days</option>
+        <option value="14" selected>Last 14 days</option>
+        <option value="30">Last 30 days</option>
+      </select>
+      <button onclick="loadMyAtt()">🔄 Load History</button>
+    </div>
     <div id="meAttList"></div>
   </div>
 </div>
 
 <!-- 🗺️ QUESTS -->
 <div class="sec" id="s-meq">
-  <div class="panel"><h2>🗺️ My quests today</h2><div id="meQuests"></div></div>
+  <div class="panel">
+    <h2>🗺️ Daily Quests & Milestones</h2>
+    <div id="meQuests"></div>
+  </div>
 </div>
 
-<!-- 🏪 SHOP -->
+<!-- 🏪 SHOP & INVENTORY -->
 <div class="sec" id="s-shop">
-  <div class="panel"><h2>🏪 Shop <span id="shopBal" class="muted"></span></h2><div class="shop" id="shopGrid"></div></div>
-  <div class="panel" id="shopAdminBox" style="display:none"><h2>➕ Add / update item 👑</h2>
-    <div class="row"><input id="shId" placeholder="id (e.g. pizza)"><input id="shName" placeholder="🍕 Name">
-    <input id="shCost" type="number" placeholder="Cost 🪙" style="width:120px">
-    <input id="shDesc" placeholder="Description" style="flex:1;min-width:200px"><button onclick="shopAdd()">➕ Save</button></div>
+  <div class="panel">
+    <h2>🏪 Rewards & Perks Shop <span id="shopBal" class="muted"></span></h2>
+    <div class="row">
+      <input id="shopSearch" class="search-input" placeholder="🔍 Search shop items..." oninput="filterShop()">
+    </div>
+    <div class="shop" id="shopGrid"></div>
   </div>
-  <div class="panel"><h2>🎒 My inventory</h2><div id="bagList"></div></div>
+  <div class="panel" id="shopAdminBox" style="display:none">
+    <h2>➕ Add / Update Shop Item 👑</h2>
+    <div class="row stackable">
+      <input id="shId" placeholder="ID (e.g. custom_role)">
+      <input id="shName" placeholder="🎁 Display Name">
+      <input id="shCost" type="number" placeholder="Cost 🪙" style="max-width:140px">
+      <input id="shDesc" placeholder="Item description" style="flex:1;min-width:200px">
+      <button onclick="shopAdd()">💾 Save Item</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>🎒 My Inventory</h2>
+    <div id="bagList"></div>
+  </div>
 </div>
 
 <!-- 🌴 MY LEAVES -->
 <div class="sec" id="s-meleave">
-  <div class="panel"><h2>🌴 My leaves</h2><div id="myLeaveList"></div></div>
-  <div class="panel"><h2>➕ Apply for leave</h2>
-    <div class="row"><input id="lvDays" type="number" value="1" style="width:90px"><input id="lvFrom" type="date">
-    <input id="lvReason" placeholder="Reason 📝" style="flex:1;min-width:200px"><button onclick="leaveApply()">📝 Apply</button></div>
+  <div class="panel">
+    <h2>🌴 My Leave Requests</h2>
+    <div id="myLeaveList"></div>
+  </div>
+  <div class="panel">
+    <h2>📝 Apply for Leave</h2>
+    <div class="row stackable">
+      <input id="lvDays" type="number" value="1" min="1" max="30" style="max-width:100px" placeholder="Days">
+      <input id="lvFrom" type="date">
+      <input id="lvReason" placeholder="Reason (e.g. vacation, sick leave)" style="flex:1;min-width:200px">
+      <button onclick="leaveApply()">📤 Submit Application</button>
+    </div>
   </div>
 </div>
 
-<!-- ADMIN TABS -->
+<!-- 🌙 ADMIN: OVERVIEW -->
 <div class="sec" id="s-ov">
   <div class="grid" id="statcards"></div>
-  <div class="panel"><h2>💬📊 Last 7 days</h2><canvas id="chActivity"></canvas></div>
-  <div class="panel"><h2>🌙 Today's presence</h2><canvas id="chPresence"></canvas></div>
-  <div class="panel"><h2>⚡ Quick actions</h2>
-    <div class="row"><button onclick="doEod()">🌙 Post EOD now</button><button class="ghost" onclick="loadAdmin()">🔄 Refresh admin</button></div>
+  <div class="panel">
+    <h2>💬📊 Weekly Server Activity (Messages & Voice)</h2>
+    <canvas id="chActivity"></canvas>
+  </div>
+  <div class="panel">
+    <h2>🌙 Today's Member Presence</h2>
+    <canvas id="chPresence"></canvas>
+  </div>
+  <div class="panel">
+    <h2>⚡ Manager Quick Actions</h2>
+    <div class="row">
+      <button onclick="doEod()">🌙 Trigger EOD Summary Now</button>
+      <button class="ghost" onclick="loadAdmin()">🔄 Refresh All Admin Stats</button>
+    </div>
   </div>
 </div>
 
+<!-- 🏆 ADMIN: LEADERBOARDS & SEASONS -->
 <div class="sec" id="s-board">
-  <div class="panel"><h2>🏆 Leaderboard</h2>
-    <div class="row"><select id="bKey"><option value="xp">✨ XP</option><option value="coins">🪙 Coins</option>
-      <option value="messages">💬 Messages</option><option value="voice_seconds">🎙️ Voice</option>
-      <option value="checkins">✅ Check-ins</option><option value="reactions_added">⭐ Reactions</option></select>
-      <button onclick="loadBoard()">🔄 Load</button></div>
-    <div id="boardTbl"></div>
+  <div class="panel">
+    <h2>🏆 Server Leaderboard</h2>
+    <div class="row stackable">
+      <select id="bKey">
+        <option value="xp">✨ Total XP</option>
+        <option value="coins">🪙 Coins Balance</option>
+        <option value="messages">💬 Messages Sent</option>
+        <option value="voice_seconds">🎙️ Voice Duration</option>
+        <option value="checkins">✅ Check-in Count</option>
+        <option value="reactions_added">⭐ Reactions Added</option>
+      </select>
+      <button onclick="loadBoard()">🔄 Refresh</button>
+    </div>
+    <div class="table-wrap"><table id="boardTbl"></table></div>
   </div>
-  <div class="panel"><h2>🏁 Season <span id="seasonLbl"></span></h2>
-    <div class="row"><input id="seasonMonth" placeholder="YYYY-MM"><button onclick="loadSeason()">🔄 Load</button></div>
-    <div id="seasonTbl"></div>
+  <div class="panel">
+    <h2>🏁 Monthly Season Standings (<span id="seasonLbl"></span>)</h2>
+    <div class="row stackable">
+      <input id="seasonMonth" placeholder="YYYY-MM (e.g. 2026-09)">
+      <button onclick="loadSeason()">🔄 Load Season</button>
+    </div>
+    <div class="table-wrap"><table id="seasonTbl"></table></div>
   </div>
 </div>
 
+<!-- 👥 ADMIN: TEAM ATTENDANCE & STANDUPS -->
 <div class="sec" id="s-att">
-  <div class="panel"><h2>👥 Team attendance</h2>
-    <div class="row"><select id="attDays"><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30">Last 30 days</option></select>
-    <button onclick="loadAtt()">🔄 Load</button></div>
-    <div style="overflow-x:auto"><table><thead><tr><th>👤 Member</th><th>✅ Present</th><th>📊</th><th>🎙️ Voice</th><th>🌴 Leave</th><th>🔥 Streak</th></tr></thead><tbody id="attBody"></tbody></table></div>
+  <div class="panel">
+    <h2>👥 Team Attendance Grid</h2>
+    <div class="row stackable">
+      <select id="attDays">
+        <option value="7">Last 7 days</option>
+        <option value="14">Last 14 days</option>
+        <option value="30">Last 30 days</option>
+      </select>
+      <input id="attSearch" class="search-input" placeholder="🔍 Search member..." oninput="filterTeamAtt()">
+      <button onclick="loadAtt()">🔄 Refresh Attendance</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>👤 Member</th>
+            <th>✅ Days Present</th>
+            <th>📊 Consistency</th>
+            <th>🎙️ Voice</th>
+            <th>🌴 Leaves</th>
+            <th>🔥 Streak</th>
+          </tr>
+        </thead>
+        <tbody id="attBody"></tbody>
+      </table>
+    </div>
   </div>
-  <div class="panel"><h2>🧍 Standups</h2>
-    <div class="row"><input id="stDate" type="date"><button onclick="loadStandups()">🔄 Load</button></div>
+  <div class="panel">
+    <h2>🧍 Daily Standup Updates</h2>
+    <div class="row stackable">
+      <input id="stDate" type="date">
+      <button onclick="loadStandups()">🔄 Load Date</button>
+    </div>
     <div id="stList"></div>
   </div>
 </div>
 
+<!-- 🌴 ADMIN: LEAVES APPROVAL -->
 <div class="sec" id="s-leave">
-  <div class="panel"><h2>🌴 Leaves — approve / reject 👑</h2>
-    <div class="row"><button class="sm" onclick="loadLeaves('pending')">⏳ Pending</button>
-    <button class="sm ghost" onclick="loadLeaves('approved')">✅ Approved</button>
-    <button class="sm ghost" onclick="loadLeaves('rejected')">❌ Rejected</button>
-    <button class="sm ghost" onclick="loadLeaves('all')">📋 All</button></div>
+  <div class="panel">
+    <h2>🌴 Leave Management 👑</h2>
+    <div class="row">
+      <button class="sm" onclick="loadLeaves('pending')">⏳ Pending</button>
+      <button class="sm ghost" onclick="loadLeaves('approved')">✅ Approved</button>
+      <button class="sm ghost" onclick="loadLeaves('rejected')">❌ Rejected</button>
+      <button class="sm ghost" onclick="loadLeaves('all')">📋 All</button>
+    </div>
     <div id="leaveList"></div>
   </div>
 </div>
 
+<!-- 🎖️ ADMIN: LEVEL ROLE REWARDS -->
 <div class="sec" id="s-rew">
-  <div class="panel"><h2>🎖️ Level → role rewards 👑</h2><div id="rewList"></div>
-    <div class="row" style="margin-top:12px"><input id="rwLvl" type="number" placeholder="Level" style="width:100px">
-    <input id="rwRole" placeholder="Role ID" style="width:220px"><button onclick="rewardSet()">➕ Map</button></div>
-    <p class="muted">💡 Role ID: Server Settings → Roles → right-click → Copy ID (Developer Mode on).</p>
+  <div class="panel">
+    <h2>🎖️ Level → Role Reward Mappings 👑</h2>
+    <div id="rewList"></div>
+    <div class="row stackable" style="margin-top:16px">
+      <input id="rwLvl" type="number" placeholder="Level #" style="max-width:120px">
+      <input id="rwRole" placeholder="Discord Role ID" style="flex:1;min-width:200px">
+      <button onclick="rewardSet()">➕ Assign Role</button>
+    </div>
+    <p class="muted" style="margin-top:6px">💡 Tip: Enable Discord Developer Mode → Right-click Role in Server Settings → Copy ID.</p>
   </div>
 </div>
 
+<!-- 🎯 ADMIN: BOUNTIES -->
 <div class="sec" id="s-bounty">
-  <div class="panel"><h2>🎯 Bounties</h2><div id="bountyList"></div></div>
-  <div class="panel"><h2>➕ Post bounty 👑</h2>
-    <div class="row"><input id="boTitle" placeholder="Title" style="flex:1;min-width:180px">
-    <input id="boCoins" type="number" placeholder="Coins 🪙" style="width:120px">
-    <input id="boDesc" placeholder="Details" style="flex:1;min-width:200px"><button onclick="bountyPost()">🎯 Post</button></div>
+  <div class="panel">
+    <h2>🎯 Active Paid Bounties</h2>
+    <div id="bountyList"></div>
+  </div>
+  <div class="panel">
+    <h2>➕ Post New Bounty 👑</h2>
+    <div class="row stackable">
+      <input id="boTitle" placeholder="Bounty task title" style="flex:1;min-width:180px">
+      <input id="boCoins" type="number" placeholder="Coins 🪙" style="max-width:120px">
+      <input id="boDesc" placeholder="Requirements and guidelines" style="flex:2;min-width:220px">
+      <button onclick="bountyPost()">🎯 Post Task</button>
+    </div>
   </div>
 </div>
 
+<!-- 🪙 ADMIN: GIVE COINS -->
 <div class="sec" id="s-coins">
-  <div class="panel"><h2>🪙 Give coins 👑</h2>
-    <div class="row"><select id="coinMember" style="min-width:200px"></select>
-    <input id="coinAmt" type="number" placeholder="Amount (+/-)" style="width:140px"><button onclick="giveCoins()">💸 Send</button></div>
+  <div class="panel">
+    <h2>🪙 Adjust Member Coins 👑</h2>
+    <div class="row stackable">
+      <select id="coinMember" style="flex:1;min-width:220px"></select>
+      <input id="coinAmt" type="number" placeholder="Coin amount (+/-)" style="max-width:160px">
+      <button onclick="giveCoins()">💸 Transfer Coins</button>
+    </div>
   </div>
 </div>
 
+<!-- 🧠 ADMIN: SELF-IMPROVEMENT INSIGHTS -->
 <div class="sec" id="s-brain">
-  <div class="panel"><h2>🧠 Self-improvement engine 👑</h2>
+  <div class="panel">
+    <h2>🧠 Adaptive Intelligence & Self-Tuning Engine 👑</h2>
     <div class="grid" id="brainCards"></div>
-    <h2>🗺️ Quest completion (7d)</h2><div id="brainQuests"></div>
-    <h2 style="margin-top:14px">💡 Suggestions</h2><div id="brainSugg"></div>
-    <h2 style="margin-top:14px">🎯 Auto-tunes</h2><div id="brainTunes"></div>
-    <h2 style="margin-top:14px">📬 Feedback</h2><div id="brainFb"></div>
-    <div class="row" style="margin-top:12px"><button class="ghost" onclick="loadBrain()">🔄 Refresh</button></div>
+    <h2 style="margin-top:16px">🗺️ Quest Completion Ratios (7 Days)</h2>
+    <div id="brainQuests"></div>
+    <h2 style="margin-top:16px">💡 Algorithmic Suggestions</h2>
+    <div id="brainSugg"></div>
+    <h2 style="margin-top:16px">🎯 Quest Auto-Tuning Log</h2>
+    <div id="brainTunes"></div>
+    <h2 style="margin-top:16px">📬 Member Feedback Inbox</h2>
+    <div id="brainFb"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="ghost" onclick="loadBrain()">🔄 Refresh Insights</button>
+    </div>
   </div>
 </div>
 
+<!-- 📜 ADMIN: LOGS & ACCESS -->
 <div class="sec" id="s-logs">
-  <div class="panel"><h2>📜 Live bot logs 👑</h2>
-    <div class="row"><button class="ghost sm" onclick="loadLogs()">🔄 Refresh</button><span class="muted">auto-refreshes every 10s ⏱️</span></div>
-    <div class="logs" id="botLogs">…</div>
+  <div class="panel">
+    <h2>📜 Real-Time Bot Execution Logs 👑</h2>
+    <div class="row">
+      <button class="ghost sm" onclick="loadLogs()">🔄 Refresh Now</button>
+      <span class="muted">Live polling every 10s ⏱️</span>
+    </div>
+    <div class="logs" id="botLogs">Loading server logs…</div>
   </div>
-  <div class="panel"><h2>👁️ Dashboard access log 👑</h2><div id="accessTbl"></div></div>
+  <div class="panel">
+    <h2>👁️ Magic Link Access History 👑</h2>
+    <div class="table-wrap"><table id="accessTbl"></table></div>
+  </div>
 </div>
 
-<footer>Made with 💜 by <b>GlyteTech</b> · 🌐 www.glyte.tech · 📧 info@glyte.tech<br>…and too many <b>/checkin</b> streaks 🔥 · Glyte Bot 🤖</footer>
+<footer>
+  Made with 💜 by <b>GlyteTech</b> · 🌐 <a href="https://www.glyte.tech" target="_blank" style="color:var(--acc);text-decoration:none">glyte.tech</a> · 📧 info@glyte.tech<br>
+  Attendance · Activity · Gamification · Discord Slash Hub 🚀
+</footer>
 </div>
+
 <div id="toast"></div>
 
 <script>
 const TOKEN = new URLSearchParams(location.search).get('token') || '';
 let ME = null, chA = null, chP = null, logTimer = null;
+let cachedShopItems = [], cachedAttRows = [], cachedDays = 7;
 const medals = ['🥇','🥈','🥉'];
-function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600); }
+
+function toast(m){
+  const t = document.getElementById('toast');
+  t.textContent = m;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
 async function api(path, method='GET', body){
-  const url = path + (path.includes('?')?'&':'?') + 'token=' + encodeURIComponent(TOKEN);
-  const r = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body: body?JSON.stringify(body):undefined});
-  const j = await r.json().catch(()=>({ok:false}));
-  if(r.status===401){ document.getElementById('app').style.display='none'; document.getElementById('lock').style.display='block'; throw 0; }
-  if(!j.ok) toast('❌ ' + (j.error||'failed'));
+  const url = path + (path.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(TOKEN);
+  const r = await fetch(url, {
+    method,
+    headers: {'Content-Type': 'application/json'},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const j = await r.json().catch(() => ({ok: false}));
+  if(r.status === 401){
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('lock').style.display = 'block';
+    throw new Error('Unauthorized');
+  }
+  if(!j.ok) toast('❌ ' + (j.error || 'Request failed'));
   return j;
 }
-const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmtDur = s => { s=+s||0; const h=Math.floor(s/3600), m=Math.floor(s%3600/60); return h?`${h}h ${m}m`:(m?`${m}m ${s%60}s`:`${s}s`); };
-function countUp(el, to){ const t0=performance.now(), dur=900;
-  (function f(t){ const p=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-p,3);
-    el.textContent=Math.round(to*e).toLocaleString(); if(p<1) requestAnimationFrame(f); })(t0); }
 
-/* tabs (role-aware) */
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDur = s => {
+  s = +s || 0;
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? `${h}h ${m}m` : (m ? `${m}m ${s % 60}s` : `${s}s`);
+};
+
+function countUp(el, to){
+  if(!el) return;
+  const t0 = performance.now(), dur = 750;
+  (function f(t){
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(to * e).toLocaleString();
+    if(p < 1) requestAnimationFrame(f);
+  })(t0);
+}
+
+/* Tabs Architecture */
 function buildTabs(){
-  const personal = [['s-me','🙋 Me'],['s-medays','🗓️ My Days'],['s-meq','🗺️ Quests'],['s-shop','🏪 Shop'],['s-meleave','🌴 My Leaves']];
-  const admin = [['s-ov','🌙 Overview'],['s-board','🏆 Ranks'],['s-att','👥 Team'],['s-leave','✅ Leaves'],['s-rew','🎖️ Rewards'],['s-bounty','🎯 Bounties'],['s-coins','🪙 Coins'],['s-brain','🧠 Insights'],['s-logs','📜 Logs']];
-  const list = ME.is_admin ? [...personal, ...admin] : personal;
-  const el = document.getElementById('tabs'); el.innerHTML = '';
-  list.forEach(([id,label],i)=>{
-    const b=document.createElement('button'); b.className='tab'+(i===0?' on':''); b.style.setProperty('--i',i); b.textContent=label;
-    b.onclick=()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on')); b.classList.add('on');
-      document.querySelectorAll('.sec').forEach(x=>x.classList.remove('on')); document.getElementById(id).classList.add('on');
-      if(id==='s-logs' && !logTimer) logTimer=setInterval(loadLogs, 10000); };
+  const personal = [
+    ['s-me', '🙋 My Profile'],
+    ['s-medays', '🗓️ My Attendance'],
+    ['s-meq', '🗺️ Daily Quests'],
+    ['s-shop', '🏪 Rewards Shop'],
+    ['s-meleave', '🌴 My Leaves']
+  ];
+  const admin = [
+    ['s-ov', '🌙 Overview'],
+    ['s-board', '🏆 Leaderboards'],
+    ['s-att', '👥 Team Grid'],
+    ['s-leave', '✅ Leaves Admin'],
+    ['s-rew', '🎖️ Roles'],
+    ['s-bounty', '🎯 Bounties'],
+    ['s-coins', '🪙 Economy'],
+    ['s-brain', '🧠 AI Insights'],
+    ['s-logs', '📜 Logs']
+  ];
+  const list = ME && ME.is_admin ? [...personal, ...admin] : personal;
+  const el = document.getElementById('tabs');
+  el.innerHTML = '';
+  list.forEach(([id, label], i) => {
+    const b = document.createElement('button');
+    b.className = 'tab' + (i === 0 ? ' on' : '');
+    b.textContent = label;
+    b.onclick = () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      document.querySelectorAll('.sec').forEach(x => x.classList.remove('on'));
+      const target = document.getElementById(id);
+      if(target) target.classList.add('on');
+      if(id === 's-logs' && !logTimer) logTimer = setInterval(loadLogs, 10000);
+    };
     el.appendChild(b);
   });
   document.getElementById('s-me').classList.add('on');
 }
 
-/* 🙋 ME */
+/* 🙋 Personal Hub */
 async function loadMe(){
-  const j = await api('/api/me'); if(!j.ok) return;
+  const j = await api('/api/me');
+  if(!j.ok) return;
   ME = j;
-  document.getElementById('who').innerHTML = `👤 ${esc(j.name)} · auto-logged-in via Discord ✨` + (j.is_admin ? ' <span class="crown">👑 ADMIN</span>' : '');
-  document.getElementById('meTitle').textContent = `🙋 Hey ${j.name}! — Lv ${j.level} 📶`;
-  document.getElementById('meBar').style.width = Math.round(100*j.into/j.need) + '%';
-  document.getElementById('meLvl').textContent = `${j.into}/${j.need} XP to Lv ${j.level+1} · 🏁 season XP: ${j.season_xp}`;
-  const cards = [['🪙',j.coins,'Coins'],['🔥',j.streak,'Day streak'],['✅',j.checkins,'Check-ins'],['💬',j.messages,'Messages'],['🎙️',fmtDur(j.voice_seconds),'Voice'],['🙌',j.kudos,'Kudos']];
-  document.getElementById('meCards').innerHTML = cards.map((c,i)=>`<div class="card" style="--i:${i}"><div class="e">${c[0]}</div><div class="n">${c[1].toLocaleString?.()??c[1]}</div><div class="l">${c[2]}</div></div>`).join('');
-  document.getElementById('meBadges').innerHTML = j.badges.length ? j.badges.map(b=>`<span class="badge">🏅 ${esc(b)}</span>`).join('') : '<p class="muted">No badges yet — go earn some! 🌱</p>';
+  document.getElementById('who').innerHTML = `👤 ${esc(j.name)}` + (j.is_admin ? ' <span class="crown">👑 ADMIN</span>' : '');
+  document.getElementById('meTitle').textContent = `🙋 Welcome back, ${j.name}! — Level ${j.level} 📶`;
+  const pct = Math.min(100, Math.round(100 * j.into / (j.need || 1)));
+  document.getElementById('meBar').style.width = pct + '%';
+  document.getElementById('meLvl').textContent = `${j.into}/${j.need} XP to Level ${j.level + 1} (${pct}%) · 🏁 Season XP: ${j.season_xp}`;
+  const cards = [
+    ['🪙', j.coins, 'Coins'],
+    ['🔥', j.streak, 'Day Streak'],
+    ['✅', j.checkins, 'Check-ins'],
+    ['💬', j.messages, 'Messages'],
+    ['🎙️', fmtDur(j.voice_seconds), 'Voice Active'],
+    ['🙌', j.kudos, 'Kudos Received']
+  ];
+  document.getElementById('meCards').innerHTML = cards.map(c => `
+    <div class="card">
+      <div class="e">${c[0]}</div>
+      <div class="n">${typeof c[1] === 'number' ? c[1].toLocaleString() : c[1]}</div>
+      <div class="l">${c[2]}</div>
+    </div>
+  `).join('');
+  document.getElementById('meBadges').innerHTML = j.badges.length
+    ? j.badges.map(b => `<span class="badge">🏅 ${esc(b)}</span>`).join('')
+    : '<p class="muted">No badges yet — earn badges by checking in and completing quests! 🌱</p>';
   buildTabs();
 }
-/* 🗓️ MY DAYS */
+
+/* 🗓️ My Attendance */
 async function loadMyAtt(){
   const days = document.getElementById('meAttDays').value;
-  const j = await api('/api/my_attendance?days='+days); if(!j.ok) return;
-  document.getElementById('meAttPct').textContent = `· ${j.present}/${j.days} days 🎯`;
-  document.getElementById('meAttList').innerHTML = j.lines.map(l=>`<div class="qrow">${l.mark} <b>${l.date}</b></div>`).join('');
+  const j = await api('/api/my_attendance?days=' + days);
+  if(!j.ok) return;
+  document.getElementById('meAttPct').textContent = `· ${j.present}/${j.days} days active 🎯`;
+  document.getElementById('meAttList').innerHTML = j.lines.map(l => `
+    <div class="qrow" style="display:flex;align-items:center;justify-content:space-between">
+      <span>${l.mark} <b>${l.date}</b></span>
+      <span class="muted">${l.mark === '✅' ? 'Checked In' : (l.mark === '🎙️' ? 'Voice Active' : (l.mark === '🌴' ? 'Approved Leave' : 'Absent'))}</span>
+    </div>
+  `).join('');
 }
-/* 🗺️ QUESTS */
+
+/* 🗺️ Daily Quests */
 async function loadMyQuests(){
-  if(!ME) await loadMe(); if(!ME) return;
-  document.getElementById('meQuests').innerHTML = ME.quests.map(q=>{
-    const pct = Math.round(100*q.progress/q.target);
-    return `<div class="qrow"><b>${esc(q.name)}</b> — ${q.progress}/${q.target}
-      <div class="bar" style="margin:8px 0"><i style="width:${pct}%"></i></div>
-      <span class="muted">+${q.xp} ✨ +${q.coins} 🪙</span>
-      ${q.claimed ? ' <span class="chip c-done">claimed ✅</span>' : (q.done ? ` <button class="sm good" onclick="claimQuest('${q.id}')">🎉 Claim!</button>` : '')}</div>`; }).join('');
+  if(!ME) await loadMe();
+  if(!ME) return;
+  document.getElementById('meQuests').innerHTML = ME.quests.map(q => {
+    const pct = Math.min(100, Math.round(100 * q.progress / (q.target || 1)));
+    return `
+      <div class="qrow">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <b>${esc(q.name)}</b>
+          <span class="muted">${q.progress} / ${q.target}</span>
+        </div>
+        <div class="muted" style="margin:4px 0">${esc(q.desc)}</div>
+        <div class="bar" style="margin:8px 0"><i style="width:${pct}%"></i></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <span class="muted">+${q.xp} ✨ +${q.coins} 🪙</span>
+          ${q.claimed
+            ? '<span class="chip c-done">Claimed Today ✅</span>'
+            : (q.done
+              ? `<button class="sm good" onclick="claimQuest('${q.id}')">🎉 Claim Reward!</button>`
+              : '<span class="chip c-pending">In Progress</span>')}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
+
 async function claimQuest(id){
-  const j = await api('/api/quest_claim_self','POST',{quest_id:id}); if(!j.ok) return;
-  toast(`🎉 +${j.xp} XP, +${j.coins} 🪙`); await loadMe(); loadMyQuests();
+  const j = await api('/api/quest_claim_self', 'POST', {quest_id: id});
+  if(!j.ok) return;
+  toast(`🎉 Claimed! +${j.xp} XP & +${j.coins} Coins!`);
+  await loadMe();
+  loadMyQuests();
 }
-/* 🏪 SHOP + 🎒 */
+
+/* 🏪 Shop & Bag */
 async function loadShop(){
-  const j = await api('/api/shop'); if(!j.ok) return;
+  const j = await api('/api/shop');
+  if(!j.ok) return;
+  cachedShopItems = j.rows;
+  renderShop();
   const admin = ME && ME.is_admin;
   document.getElementById('shopAdminBox').style.display = admin ? 'block' : 'none';
-  if(ME) document.getElementById('shopBal').textContent = `· balance: ${ME.coins} 🪙`;
-  document.getElementById('shopGrid').innerHTML = j.rows.map(it=>
-    `<div class="item"><b>${esc(it.name)}</b><br><span class="muted">${esc(it.desc)}</span><br>
-     <span class="cost">${it.cost} 🪙</span> <code>${esc(it.id)}</code><br>
-     <div class="row" style="margin:8px 0 0"><button class="sm" onclick="buySelf('${esc(it.id)}')">🛍️ Buy</button>
-     ${admin?`<button class="sm bad" onclick="shopDel('${esc(it.id)}')">🗑️</button>`:''}</div></div>`).join('');
-  const b = await api('/api/my_inventory'); if(b.ok)
-    document.getElementById('bagList').innerHTML = b.rows.length ? b.rows.map(it=>`<span class="badge">🎒 ${esc(it.name)}</span>`).join('') : '<p class="muted">Empty — visit the shop! 🏪</p>';
+  if(ME) document.getElementById('shopBal').textContent = `· Available: ${ME.coins} 🪙`;
+
+  const b = await api('/api/my_inventory');
+  if(b.ok){
+    document.getElementById('bagList').innerHTML = b.rows.length
+      ? b.rows.map(it => `<span class="badge">🎒 ${esc(it.name)}</span>`).join('')
+      : '<p class="muted">Your inventory is empty — grab some boosters in the shop! 🏪</p>';
+  }
 }
+
+function renderShop(){
+  const term = (document.getElementById('shopSearch')?.value || '').toLowerCase().trim();
+  const filtered = cachedShopItems.filter(it => !term || it.name.toLowerCase().includes(term) || (it.desc || '').toLowerCase().includes(term));
+  const admin = ME && ME.is_admin;
+  document.getElementById('shopGrid').innerHTML = filtered.length ? filtered.map(it => `
+    <div class="item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <b>${esc(it.name)}</b>
+        <span class="cost">${it.cost} 🪙</span>
+      </div>
+      <p class="muted" style="margin:6px 0 10px;font-size:12.5px">${esc(it.desc || 'Server reward item')}</p>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="sm" style="flex:1" onclick="buySelf('${esc(it.id)}')">🛍️ Purchase</button>
+        ${admin ? `<button class="sm bad" onclick="shopDel('${esc(it.id)}')">🗑️</button>` : ''}
+      </div>
+    </div>
+  `).join('') : '<p class="muted">No shop items match your search.</p>';
+}
+
+function filterShop(){ renderShop(); }
+
 async function buySelf(id){
-  const j = await api('/api/buy_self','POST',{item_id:id}); if(!j.ok) return;
-  toast('🛍️ Bought! Balance: '+j.balance+' 🪙'); await loadMe(); loadShop();
+  const j = await api('/api/buy_self', 'POST', {item_id: id});
+  if(!j.ok) return;
+  toast('🛍️ Purchased! Remaining: ' + j.balance + ' 🪙');
+  await loadMe();
+  loadShop();
 }
+
 async function shopAdd(){
-  const j = await api('/api/shop_add','POST',{id:document.getElementById('shId').value,name:document.getElementById('shName').value,cost:document.getElementById('shCost').value,description:document.getElementById('shDesc').value});
-  if(!j.ok) return; toast('🏪 Saved!'); loadShop();
+  const id = document.getElementById('shId').value.trim();
+  const name = document.getElementById('shName').value.trim();
+  const cost = document.getElementById('shCost').value.trim();
+  const desc = document.getElementById('shDesc').value.trim();
+  if(!id || !name || !cost) { toast('❌ ID, Name and Cost are required.'); return; }
+  const j = await api('/api/shop_add', 'POST', {id, name, cost, description: desc});
+  if(!j.ok) return;
+  toast('🏪 Item saved to shop!');
+  loadShop();
 }
-async function shopDel(id){ if(!confirm('Delete '+id+'?')) return;
-  const j = await api('/api/shop_delete','POST',{id}); if(!j.ok) return; toast('🗑️ Deleted'); loadShop(); }
-/* 🌴 MY LEAVES */
+
+async function shopDel(id){
+  if(!confirm(`Delete item "${id}" from shop?`)) return;
+  const j = await api('/api/shop_delete', 'POST', {id});
+  if(!j.ok) return;
+  toast('🗑️ Item removed.');
+  loadShop();
+}
+
+/* 🌴 Leaves */
 async function loadMyLeaves(){
-  const j = await api('/api/my_leaves'); if(!j.ok) return;
-  document.getElementById('myLeaveList').innerHTML = j.rows.length ? j.rows.map(r=>
-    `<div class="qrow">🌴 <b>${esc(r.from)}</b> ×${r.days}d <span class="chip c-${r.status}">${r.status}</span><br><span class="muted">📝 ${esc(r.reason)}</span></div>`).join('')
-    : '<p class="muted">No leaves yet — enjoy work 😄</p>';
-  document.getElementById('lvFrom').value = new Date().toISOString().slice(0,10);
+  const j = await api('/api/my_leaves');
+  if(!j.ok) return;
+  document.getElementById('myLeaveList').innerHTML = j.rows.length ? j.rows.map(r => `
+    <div class="qrow">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <b>🌴 ${esc(r.from)}</b>
+        <span class="chip c-${r.status}">${r.status}</span>
+      </div>
+      <div class="muted" style="margin-top:4px">Duration: ${r.days} day(s) · Reason: ${esc(r.reason || 'Personal')}</div>
+    </div>
+  `).join('') : '<p class="muted">No recent leave requests on file.</p>';
+  document.getElementById('lvFrom').value = new Date().toISOString().slice(0, 10);
 }
+
 async function leaveApply(){
-  const j = await api('/api/leave_apply_self','POST',{days:document.getElementById('lvDays').value,from:document.getElementById('lvFrom').value,reason:document.getElementById('lvReason').value});
-  if(!j.ok) return; toast('📝 Leave applied!'); loadMyLeaves();
+  const days = document.getElementById('lvDays').value;
+  const from = document.getElementById('lvFrom').value;
+  const reason = document.getElementById('lvReason').value.trim();
+  if(!from) { toast('❌ Please select a start date.'); return; }
+  const j = await api('/api/leave_apply_self', 'POST', {days, from, reason});
+  if(!j.ok) return;
+  toast('📝 Leave application submitted!');
+  loadMyLeaves();
 }
 
-/* ---- ADMIN ---- */
+/* 🌙 Admin Overview */
 async function loadOverview(){
-  const j = await api('/api/overview'); if(!j.ok) return;
+  const j = await api('/api/overview');
+  if(!j.ok) return;
   document.getElementById('today').textContent = '📅 ' + j.today;
-  const cards = [['👥','members','Members'],['✅','present','Present today'],['🎙️','voice_only','Voice only'],['🌴','pending_leaves','Pending leaves'],['🪙','coins','Coins out there']];
-  document.getElementById('statcards').innerHTML = cards.map((c,i)=>`<div class="card" style="--i:${i}"><div class="e">${c[0]}</div><div class="n" id="st-${c[1]}">0</div><div class="l">${c[2]}</div></div>`).join('');
-  cards.forEach(c=>countUp(document.getElementById('st-'+c[1]), j[c[1]]));
-  if(chA) chA.destroy(); if(chP) chP.destroy();
-  Chart.defaults.color='#8b93b0'; Chart.defaults.borderColor='#2a3350';
-  chA = new Chart(document.getElementById('chActivity'),{type:'bar',
-    data:{labels:j.series.map(s=>s.date),datasets:[{label:'💬 Messages',data:j.series.map(s=>s.messages),backgroundColor:'#5865F2',borderRadius:8},{label:'🎙️ Voice min',data:j.series.map(s=>s.voice_min),backgroundColor:'#EB459E',borderRadius:8}]},
-    options:{plugins:{legend:{labels:{boxWidth:12}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
-  chP = new Chart(document.getElementById('chPresence'),{type:'doughnut',
-    data:{labels:['✅ Present','🎙️ Voice only','❓ Rest'],datasets:[{data:[j.present,j.voice_only,Math.max(0,j.members-j.present-j.voice_only)],backgroundColor:['#57F287','#5865F2','#2a3350'],borderWidth:0}]},
-    options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12}}}}});
-}
-function boardRows(rows, voice){
-  return rows.map((r,i)=>`<tr><td>${medals[i]||'#'+(i+1)}</td><td><b>${esc(r.name)}</b></td><td>${voice?fmtDur(r.score):Number(r.score).toLocaleString()}</td></tr>`).join('');
-}
-async function loadBoard(){
-  const key=document.getElementById('bKey').value;
-  const j=await api('/api/leaderboard?key='+key+'&limit=10'); if(!j.ok) return;
-  document.getElementById('boardTbl').innerHTML=`<table><thead><tr><th>🏅</th><th>👤 Member</th><th>📊 Score</th></tr></thead><tbody>${boardRows(j.rows,key==='voice_seconds')}</tbody></table>`;
-}
-async function loadSeason(){
-  const m=document.getElementById('seasonMonth').value.trim();
-  const j=await api('/api/season'+(m?('?month='+m):'')); if(!j.ok) return;
-  document.getElementById('seasonLbl').textContent=j.month;
-  document.getElementById('seasonTbl').innerHTML=j.rows.length?`<table><thead><tr><th>🏅</th><th>👤</th><th>✨ XP</th><th>💬</th><th>🎙️</th></tr></thead><tbody>`+j.rows.map((r,i)=>`<tr><td>${medals[i]||'#'+(i+1)}</td><td><b>${esc(r.name)}</b></td><td>${r.xp}</td><td>${r.messages}</td><td>${fmtDur(r.voice_min*60)}</td></tr>`).join('')+`</tbody></table>`:'<p class="muted">No activity yet 🌱</p>';
-}
-async function loadAtt(){
-  const days=document.getElementById('attDays').value;
-  const j=await api('/api/attendance?days='+days); if(!j.ok) return;
-  document.getElementById('attBody').innerHTML=j.rows.map(r=>{const pct=Math.round(100*r.present/days);
-    return `<tr><td><b>${esc(r.name)}</b></td><td>${r.present}/${days}</td><td><div class="bar"><i style="width:${pct}%"></i></div></td><td>🎙️ ${r.voice_days}</td><td>🌴 ${r.leaves}</td><td>🔥 ${r.streak}</td></tr>`;}).join('')||'<tr><td colspan="6" class="muted">Nobody tracked yet 🌱</td></tr>';
-}
-async function loadStandups(){
-  const d=document.getElementById('stDate').value;
-  const j=await api('/api/standups'+(d?('?date='+d):'')); if(!j.ok) return;
-  document.getElementById('stList').innerHTML=j.rows.length?j.rows.map(r=>`<div class="item" style="margin-bottom:10px"><b>🧍 ${esc(r.name)}</b><br>↩️ ${esc(r.yesterday)}<br>➡️ ${esc(r.today)}<br>🚧 ${esc(r.blockers)}</div>`).join(''):'<p class="muted">No standups 🧍</p>';
-}
-async function loadLeaves(status='pending'){
-  const j=await api('/api/leaves?status='+status); if(!j.ok) return;
-  document.getElementById('leaveList').innerHTML=j.rows.length?j.rows.map(r=>
-    `<div class="item" style="margin-bottom:10px"><b>🌴 ${esc(r.name)}</b> <span class="chip c-${r.status}">${r.status}</span><br>
-     <span class="muted">${esc(r.from)} · ×${r.days}d</span><br>📝 ${esc(r.reason)}
-     ${r.status==='pending'?`<div class="row" style="margin:8px 0 0"><button class="sm good" onclick="decideLeave('${r.id}',true)">✅ Approve</button><button class="sm bad" onclick="decideLeave('${r.id}',false)">❌ Reject</button></div>`:''}</div>`).join(''):'<p class="muted">Nothing here 🎉</p>';
-}
-async function decideLeave(id,approve){
-  const j=await api('/api/leave_decide','POST',{id,approve}); if(!j.ok) return;
-  toast(approve?'✅ Approved!':'❌ Rejected'); loadLeaves('pending');
-}
-async function loadRewards(){
-  const j=await api('/api/rewards'); if(!j.ok) return;
-  const rows=Object.entries(j.rows).sort((a,b)=>a[0]-b[0]);
-  document.getElementById('rewList').innerHTML=rows.length?rows.map(([lvl,rid])=>`<div class="row"><span>📶 Lv <b>${lvl}</b> → <code>${esc(rid)}</code></span> <button class="sm bad" onclick="rewardDel('${lvl}')">🗑️</button></div>`).join(''):'<p class="muted">No level rewards yet 🎖️</p>';
-}
-async function rewardSet(){
-  const j=await api('/api/reward_set','POST',{level:document.getElementById('rwLvl').value,role_id:document.getElementById('rwRole').value});
-  if(!j.ok) return; toast('🎖️ Mapped!'); loadRewards();
-}
-async function rewardDel(level){
-  const j=await api('/api/reward_delete','POST',{level}); if(!j.ok) return; toast('🗑️ Removed'); loadRewards();
-}
-async function loadBounties(){
-  const j=await api('/api/bounties'); if(!j.ok) return;
-  document.getElementById('bountyList').innerHTML=j.rows.length?j.rows.map(r=>
-    `<div class="item" style="margin-bottom:10px"><b>🎯 ${esc(r.title)}</b> <span class="chip c-${r.status}">${r.status}</span><br>
-     💰 <b>${r.coins} 🪙</b> · <span class="muted">${esc(r.description)}</span>${r.claimer?`<br>🤝 <b>${esc(r.claimer)}</b>`:''}
-     ${r.status==='claimed'?`<div class="row" style="margin:8px 0 0"><button class="sm good" onclick="bountyApprove('${r.id}')">💰 Approve & pay</button></div>`:''}</div>`).join(''):'<p class="muted">No bounties 🎯</p>';
-}
-async function bountyPost(){
-  const j=await api('/api/bounty_post','POST',{title:document.getElementById('boTitle').value,coins:document.getElementById('boCoins').value,description:document.getElementById('boDesc').value});
-  if(!j.ok) return; toast('🎯 Posted!'); loadBounties();
-}
-async function bountyApprove(id){
-  const j=await api('/api/bounty_approve','POST',{id}); if(!j.ok) return; toast('💰 Paid!'); loadBounties();
-}
-async function loadMembers(){
-  const j=await api('/api/members'); if(!j.ok) return;
-  document.getElementById('coinMember').innerHTML=j.rows.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('');
-}
-async function giveCoins(){
-  const j=await api('/api/give_coins','POST',{user_id:document.getElementById('coinMember').value,amount:document.getElementById('coinAmt').value});
-  if(!j.ok) return; toast('💸 Done! Balance: '+j.balance+' 🪙');
-}
-async function doEod(){
-  const j=await api('/api/eod','POST',{}); if(!j.ok) return; toast('🌙 EOD posted!');
-}
-async function loadBrain(){
-  const j=await api('/api/insights'); if(!j.ok) return;
-  document.getElementById('brainCards').innerHTML=[['👥',j.users,'Members'],['✅',j.checkins_7,'Check-ins/7d'],['🙌',j.kudos_7,'Kudos/7d'],['🧍',j.standups_7,'Standups/7d']]
-    .map((c,i)=>`<div class="card" style="--i:${i}"><div class="e">${c[0]}</div><div class="n">${c[1]}</div><div class="l">${c[2]}</div></div>`).join('');
-  document.getElementById('brainQuests').innerHTML=Object.entries(j.quests).map(([id,q])=>
-    `<div class="qrow">${q.name} — <b>${Math.round(q.rate*100)}%</b> completion · target <b>${q.target}</b>
-     <div class="bar" style="margin-top:8px"><i style="width:${Math.min(100,Math.round(q.rate*100))}%"></i></div></div>`).join('');
-  document.getElementById('brainSugg').innerHTML=j.suggestions.map(s=>`<div class="qrow">${esc(s)}</div>`).join('');
-  document.getElementById('brainTunes').innerHTML=j.tune_log.length?j.tune_log.map(a=>`<div class="qrow">🎯 <code>${a.at.slice(0,10)}</code> <b>${esc(a.quest)}</b>: ${a.old}→<b>${a.new}</b> (rate ${a.rate})</div>`).join(''):'<p class="muted">No auto-tunes yet — the bot tunes daily 🧠</p>';
-  document.getElementById('brainFb').innerHTML=j.feedback.length?j.feedback.map(f=>`<div class="qrow">📬 <b>${esc(f.by)}</b>: ${esc(f.text)}</div>`).join(''):'<p class="muted">No feedback yet — try /feedback 💌</p>';
-}
-async function loadLogs(){
-  const j=await api('/api/bot_logs?n=150'); if(j.ok){ const el=document.getElementById('botLogs'); el.textContent=j.rows.join('\n')||'(empty)'; el.scrollTop=el.scrollHeight; }
-  const a=await api('/api/access_log'); if(a.ok)
-    document.getElementById('accessTbl').innerHTML=a.rows.length?`<table><thead><tr><th>👤 Who</th><th>🕐 When (UTC)</th><th>🌐 IP</th></tr></thead><tbody>`+a.rows.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${esc(r.at.slice(0,19).replace('T',' '))}</td><td><code>${esc(r.ip)}</code></td></tr>`).join('')+`</tbody></table>`:'<p class="muted">No visits yet 👀</p>';
+  const cards = [
+    ['👥', 'members', 'Server Members'],
+    ['✅', 'present', 'Present Today'],
+    ['🎙️', 'voice_only', 'Voice Active'],
+    ['🌴', 'pending_leaves', 'Pending Leaves'],
+    ['🪙', 'coins', 'Total Economy Coins']
+  ];
+  document.getElementById('statcards').innerHTML = cards.map((c, i) => `
+    <div class="card">
+      <div class="e">${c[0]}</div>
+      <div class="n" id="st-${c[1]}">0</div>
+      <div class="l">${c[2]}</div>
+    </div>
+  `).join('');
+  cards.forEach(c => countUp(document.getElementById('st-' + c[1]), j[c[1]]));
+
+  if(chA) chA.destroy();
+  if(chP) chP.destroy();
+  Chart.defaults.color = '#949db8';
+  Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+
+  chA = new Chart(document.getElementById('chActivity'), {
+    type: 'bar',
+    data: {
+      labels: j.series.map(s => s.date),
+      datasets: [
+        { label: '💬 Messages', data: j.series.map(s => s.messages), backgroundColor: '#5865F2', borderRadius: 6 },
+        { label: '🎙️ Voice (min)', data: j.series.map(s => s.voice_min), backgroundColor: '#EB459E', borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { boxWidth: 12 } } },
+      scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }
+    }
+  });
+
+  chP = new Chart(document.getElementById('chPresence'), {
+    type: 'doughnut',
+    data: {
+      labels: ['✅ Present', '🎙️ Voice Only', '❓ Absent/Inactive'],
+      datasets: [{
+        data: [j.present, j.voice_only, Math.max(0, j.members - j.present - j.voice_only)],
+        backgroundColor: ['#57F287', '#5865F2', '#242c44'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+    }
+  });
 }
 
-async function loadAdmin(){ await loadOverview(); await loadBoard(); await loadSeason(); await loadAtt(); await loadLeaves('pending'); await loadShop(); await loadRewards(); await loadBounties(); await loadMembers(); await loadBrain(); await loadLogs(); }
+/* 🏆 Leaderboard & Seasons */
+function boardRows(rows, isVoice){
+  return rows.map((r, i) => `
+    <tr>
+      <td style="font-weight:700">${medals[i] || '#' + (i + 1)}</td>
+      <td><b>${esc(r.name)}</b></td>
+      <td>${isVoice ? fmtDur(r.score) : Number(r.score).toLocaleString()}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadBoard(){
+  const key = document.getElementById('bKey').value;
+  const j = await api('/api/leaderboard?key=' + key + '&limit=15');
+  if(!j.ok) return;
+  document.getElementById('boardTbl').innerHTML = `
+    <thead>
+      <tr><th>Rank</th><th>👤 Member</th><th>📊 Score</th></tr>
+    </thead>
+    <tbody>${boardRows(j.rows, key === 'voice_seconds')}</tbody>
+  `;
+}
+
+async function loadSeason(){
+  const m = document.getElementById('seasonMonth').value.trim();
+  const j = await api('/api/season' + (m ? ('?month=' + m) : ''));
+  if(!j.ok) return;
+  document.getElementById('seasonLbl').textContent = j.month;
+  document.getElementById('seasonTbl').innerHTML = j.rows.length ? `
+    <thead>
+      <tr><th>Rank</th><th>👤 Member</th><th>✨ Season XP</th><th>💬 Messages</th><th>🎙️ Voice</th></tr>
+    </thead>
+    <tbody>${j.rows.map((r, i) => `
+      <tr>
+        <td style="font-weight:700">${medals[i] || '#' + (i + 1)}</td>
+        <td><b>${esc(r.name)}</b></td>
+        <td>${Number(r.xp).toLocaleString()}</td>
+        <td>${Number(r.messages).toLocaleString()}</td>
+        <td>${fmtDur(r.voice_min * 60)}</td>
+      </tr>
+    `).join('')}</tbody>
+  ` : '<tbody><tr><td colspan="5" class="muted">No season activity registered yet.</td></tr></tbody>';
+}
+
+/* 👥 Team Attendance */
+async function loadAtt(){
+  const days = document.getElementById('attDays').value;
+  cachedDays = days;
+  const j = await api('/api/attendance?days=' + days);
+  if(!j.ok) return;
+  cachedAttRows = j.rows;
+  renderTeamAtt();
+}
+
+function renderTeamAtt(){
+  const term = (document.getElementById('attSearch')?.value || '').toLowerCase().trim();
+  const filtered = cachedAttRows.filter(r => !term || r.name.toLowerCase().includes(term));
+  document.getElementById('attBody').innerHTML = filtered.length ? filtered.map(r => {
+    const pct = Math.min(100, Math.round(100 * r.present / cachedDays));
+    return `
+      <tr>
+        <td><b>${esc(r.name)}</b></td>
+        <td>${r.present} / ${cachedDays}d</td>
+        <td><div class="bar"><i style="width:${pct}%"></i></div></td>
+        <td>🎙️ ${r.voice_days}</td>
+        <td>🌴 ${r.leaves}</td>
+        <td>🔥 ${r.streak}</td>
+      </tr>
+    `;
+  }).join('') : '<tr><td colspan="6" class="muted">No members match the query.</td></tr>';
+}
+
+function filterTeamAtt(){ renderTeamAtt(); }
+
+async function loadStandups(){
+  const d = document.getElementById('stDate').value;
+  const j = await api('/api/standups' + (d ? ('?date=' + d) : ''));
+  if(!j.ok) return;
+  document.getElementById('stList').innerHTML = j.rows.length ? j.rows.map(r => `
+    <div class="qrow" style="margin-bottom:12px">
+      <b>🧍 ${esc(r.name)}</b>
+      <div style="margin-top:6px;font-size:13px">
+        <div>↩️ <b>Yesterday:</b> ${esc(r.yesterday)}</div>
+        <div style="margin-top:2px">➡️ <b>Today:</b> ${esc(r.today)}</div>
+        <div style="margin-top:2px">🚧 <b>Blockers:</b> ${esc(r.blockers)}</div>
+      </div>
+    </div>
+  `).join('') : '<p class="muted">No standup reports submitted for this date.</p>';
+}
+
+/* 🌴 Leaves Admin */
+async function loadLeaves(status='pending'){
+  const j = await api('/api/leaves?status=' + status);
+  if(!j.ok) return;
+  document.getElementById('leaveList').innerHTML = j.rows.length ? j.rows.map(r => `
+    <div class="qrow" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <b>🌴 ${esc(r.name)}</b>
+        <span class="chip c-${r.status}">${r.status}</span>
+      </div>
+      <div class="muted" style="margin-top:4px">Starting: ${esc(r.from)} · Duration: ${r.days} day(s)</div>
+      <div style="margin-top:4px;font-size:13px">Reason: <i>${esc(r.reason || 'None provided')}</i></div>
+      ${r.status === 'pending' ? `
+        <div class="row" style="margin-top:10px">
+          <button class="sm good" onclick="decideLeave('${r.id}', true)">✅ Approve</button>
+          <button class="sm bad" onclick="decideLeave('${r.id}', false)">❌ Reject</button>
+        </div>
+      ` : ''}
+    </div>
+  `).join('') : '<p class="muted">No leave requests in this category 🎉</p>';
+}
+
+async function decideLeave(id, approve){
+  const j = await api('/api/leave_decide', 'POST', {id, approve});
+  if(!j.ok) return;
+  toast(approve ? '✅ Leave approved!' : '❌ Leave rejected.');
+  loadLeaves('pending');
+}
+
+/* 🎖️ Level Roles */
+async function loadRewards(){
+  const j = await api('/api/rewards');
+  if(!j.ok) return;
+  const rows = Object.entries(j.rows).sort((a, b) => Number(a[0]) - Number(b[0]));
+  document.getElementById('rewList').innerHTML = rows.length ? rows.map(([lvl, rid]) => `
+    <div class="qrow" style="display:flex;justify-content:space-between;align-items:center">
+      <span>📶 Level <b>${lvl}</b> → Role ID <code>${esc(rid)}</code></span>
+      <button class="sm bad" onclick="rewardDel('${lvl}')">🗑️ Delete</button>
+    </div>
+  `).join('') : '<p class="muted">No level roles configured yet.</p>';
+}
+
+async function rewardSet(){
+  const lvl = document.getElementById('rwLvl').value.trim();
+  const role_id = document.getElementById('rwRole').value.trim();
+  if(!lvl || !role_id) { toast('❌ Level and Role ID required.'); return; }
+  const j = await api('/api/reward_set', 'POST', {level: lvl, role_id});
+  if(!j.ok) return;
+  toast('🎖️ Role mapping saved!');
+  loadRewards();
+}
+
+async function rewardDel(level){
+  const j = await api('/api/reward_delete', 'POST', {level});
+  if(!j.ok) return;
+  toast('🗑️ Role mapping deleted.');
+  loadRewards();
+}
+
+/* 🎯 Bounties */
+async function loadBounties(){
+  const j = await api('/api/bounties');
+  if(!j.ok) return;
+  document.getElementById('bountyList').innerHTML = j.rows.length ? j.rows.map(r => `
+    <div class="qrow" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <b>🎯 ${esc(r.title)}</b>
+        <span class="chip c-${r.status}">${r.status}</span>
+      </div>
+      <div style="color:var(--gold);font-weight:700;margin:4px 0">💰 ${r.coins} 🪙</div>
+      <div class="muted">${esc(r.description)}</div>
+      ${r.claimer ? `<div style="margin-top:6px">🤝 Claimed by: <b>${esc(r.claimer)}</b></div>` : ''}
+      ${r.status === 'claimed' ? `
+        <div class="row" style="margin-top:10px">
+          <button class="sm good" onclick="bountyApprove('${r.id}')">💰 Approve & Transfer Reward</button>
+        </div>
+      ` : ''}
+    </div>
+  `).join('') : '<p class="muted">No bounties posted yet.</p>';
+}
+
+async function bountyPost(){
+  const title = document.getElementById('boTitle').value.trim();
+  const coins = document.getElementById('boCoins').value.trim();
+  const description = document.getElementById('boDesc').value.trim();
+  if(!title || !coins) { toast('❌ Title and Coins required.'); return; }
+  const j = await api('/api/bounty_post', 'POST', {title, coins, description});
+  if(!j.ok) return;
+  toast('🎯 Bounty published!');
+  loadBounties();
+}
+
+async function bountyApprove(id){
+  const j = await api('/api/bounty_approve', 'POST', {id});
+  if(!j.ok) return;
+  toast('💰 Bounty approved and coins paid!');
+  loadBounties();
+}
+
+/* 🪙 Economy */
+async function loadMembers(){
+  const j = await api('/api/members');
+  if(!j.ok) return;
+  document.getElementById('coinMember').innerHTML = j.rows.map(m => `
+    <option value="${m.id}">${esc(m.name)}</option>
+  `).join('');
+}
+
+async function giveCoins(){
+  const uid = document.getElementById('coinMember').value;
+  const amt = document.getElementById('coinAmt').value;
+  if(!uid || !amt) { toast('❌ Member and Amount required.'); return; }
+  const j = await api('/api/give_coins', 'POST', {user_id: uid, amount: amt});
+  if(!j.ok) return;
+  toast('💸 Coins updated! New balance: ' + j.balance + ' 🪙');
+}
+
+async function doEod(){
+  const j = await api('/api/eod', 'POST', {});
+  if(!j.ok) return;
+  toast('🌙 EOD summary sent to Discord channel!');
+}
+
+/* 🧠 AI Insights */
+async function loadBrain(){
+  const j = await api('/api/insights');
+  if(!j.ok) return;
+  document.getElementById('brainCards').innerHTML = [
+    ['👥', j.users, 'Total Tracked'],
+    ['✅', j.checkins_7, 'Check-ins / 7d'],
+    ['🙌', j.kudos_7, 'Kudos / 7d'],
+    ['🗺️', Object.keys(j.quests || {}).length, 'Active Quests']
+  ].map(c => `
+    <div class="card">
+      <div class="e">${c[0]}</div>
+      <div class="n">${c[1]}</div>
+      <div class="l">${c[2]}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('brainQuests').innerHTML = Object.entries(j.quests).map(([id, q]) => `
+    <div class="qrow">
+      <div style="display:flex;justify-content:space-between">
+        <b>${q.name}</b>
+        <span><b>${Math.round(q.rate * 100)}%</b> Completion (Target: ${q.target})</span>
+      </div>
+      <div class="bar" style="margin-top:8px"><i style="width:${Math.min(100, Math.round(q.rate * 100))}%"></i></div>
+    </div>
+  `).join('');
+
+  document.getElementById('brainSugg').innerHTML = j.suggestions.length
+    ? j.suggestions.map(s => `<div class="qrow">${esc(s)}</div>`).join('')
+    : '<p class="muted">All systems performing optimally 🌱</p>';
+
+  document.getElementById('brainTunes').innerHTML = j.tune_log.length ? j.tune_log.map(a => `
+    <div class="qrow">
+      🎯 <code>${a.at.slice(0, 10)}</code> <b>${esc(a.quest)}</b> target adjusted: ${a.old} → <b>${a.new}</b> (clear rate ${a.rate})
+    </div>
+  `).join('') : '<p class="muted">No auto-tunes executed recently.</p>';
+
+  document.getElementById('brainFb').innerHTML = j.feedback.length ? j.feedback.map(f => `
+    <div class="qrow">📬 <b>${esc(f.by)}:</b> ${esc(f.text)}</div>
+  `).join('') : '<p class="muted">No feedback logged in inbox.</p>';
+}
+
+/* 📜 Logs & Access */
+async function loadLogs(){
+  const j = await api('/api/bot_logs?n=150');
+  if(j.ok){
+    const el = document.getElementById('botLogs');
+    el.textContent = j.rows.join('\n') || '(Log buffer empty)';
+    el.scrollTop = el.scrollHeight;
+  }
+  const a = await api('/api/access_log');
+  if(a.ok){
+    document.getElementById('accessTbl').innerHTML = a.rows.length ? `
+      <thead>
+        <tr><th>👤 Member</th><th>🕐 Access Time (UTC)</th><th>🌐 IP</th></tr>
+      </thead>
+      <tbody>${a.rows.map(r => `
+        <tr>
+          <td><b>${esc(r.name)}</b></td>
+          <td>${esc(r.at.slice(0, 19).replace('T', ' '))}</td>
+          <td><code>${esc(r.ip)}</code></td>
+        </tr>
+      `).join('')}</tbody>
+    ` : '<tbody><tr><td colspan="3" class="muted">No access log entries yet.</td></tr></tbody>';
+  }
+}
+
+async function loadAdmin(){
+  await loadOverview();
+  await loadBoard();
+  await loadSeason();
+  await loadAtt();
+  await loadLeaves('pending');
+  await loadShop();
+  await loadRewards();
+  await loadBounties();
+  await loadMembers();
+  await loadBrain();
+  await loadLogs();
+}
+
 (async function init(){
-  if(!TOKEN){ document.getElementById('lock').style.display='block'; return; }
-  try{
-    document.getElementById('stDate').value=new Date().toISOString().slice(0,10);
-    document.getElementById('app').style.display='block';
+  if(!TOKEN){
+    document.getElementById('lock').style.display = 'block';
+    return;
+  }
+  try {
+    document.getElementById('stDate').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('app').style.display = 'block';
     await loadMe();
-    await loadMyAtt(); await loadMyQuests(); await loadShop(); await loadMyLeaves();
-    if(ME && ME.is_admin) await loadAdmin(); else setInterval(async()=>{ await loadMe(); loadMyQuests(); }, 60000);
-    if(ME && ME.is_admin) setInterval(loadOverview, 60000);
-  }catch(e){ /* 401 handled */ }
+    await loadMyAtt();
+    await loadMyQuests();
+    await loadShop();
+    await loadMyLeaves();
+    if(ME && ME.is_admin){
+      await loadAdmin();
+      setInterval(loadOverview, 60000);
+    } else {
+      setInterval(async () => {
+        await loadMe();
+        loadMyQuests();
+      }, 60000);
+    }
+  } catch(e){
+    console.error('Initialization error:', e);
+  }
 })();
 </script>
 </body>

@@ -281,19 +281,45 @@ flowchart LR
 
 > 🔮 Next level: plug an LLM key in and the 🧠 tab can narrate standups, draft EOD highlights & predict churn. The hooks are ready.
 
-## 🗂️📁 Project structure
+## 📖 Command Manual & Quick Help
+
+For an in-depth guide to all 46 slash commands, permissions, and arguments, refer to **[COMMANDS.md](COMMANDS.md)**.
+In Discord, members and managers can also run **`/help`** to browse commands interactively by category with real-time UI select menus.
+
+> 💡 **Troubleshooting "This command is outdated":**
+> If Discord displays *"This command is outdated"*, an administrator can run **`/sync`** in your server to refresh all commands immediately without propagation delay. Then press **`Ctrl + R`** / **`Cmd + R`** (or restart your Discord mobile app) to reload the client cache.
+
+---
+
+## 🗂️📁 Modular Project Structure
 
 ```
 Glyte-Discord-Bot/
-├── 🤖 bot.py              # everything: tracking, gamification, leaves, shop, rituals, dashboard API
-├── 🖥️ dashboard.html       # dark animated dashboard UI ✨
-├── 📦 requirements.txt
-├── 🐳 Dockerfile
-├── 🐳 docker-compose.yml  # bot + local mongo (unused if MONGO_URI → Atlas)
-├── 🤫 .env                # YOUR secrets — gitignored, never commit 🚫
-├── 📝 .env.example        # safe template ✅
-├── ⚖️ LICENSE             # MIT — free to use & share 💛
-└── 📖 README.md           # you are here! 👋
+├── 🤖 bot.py              # Lightweight entrypoint & Cog loader (~120 lines)
+├── ⚙️ config.py           # Environment variables, game constants, public URL detection
+├── 🍃 database.py         # MongoDB Atlas client, pooled connections & in-memory cache
+├── 🖥️ dashboard.py        # Aiohttp web server & REST API endpoints
+├── 🎨 dashboard.html      # Responsive glassmorphic live web dashboard UI ✨
+├── 📖 COMMANDS.md         # Complete reference manual for all slash commands
+├── 📦 requirements.txt    # Python dependencies (certifi, discord.py, motor, aiohttp)
+├── 🐳 Dockerfile          # Hardened container definition with ca-certificates
+├── 🐳 docker-compose.yml  # Multi-container orchestration (bot + mongo service)
+├── 🙈 .dockerignore       # Protects secrets & cache from entering image builds
+├── 🤫 .env                # Your local secrets — gitignored, never commit! 🚫
+├── 📝 .env.example        # Safe template for production environment setup
+├── 📁 cogs/               # Discord.py Cogs (Modular feature bundles)
+│   ├── attendance.py      # /checkin, /daily, /mystats, leaves modal & approval flow
+│   ├── gamification.py    # /quests, /leaderboard, /season, /badges, /spin, /focus
+│   ├── shop.py            # /shop, /buy, /use, /inventory, /shop_add, /shop_remove
+│   ├── rituals.py         # /standup, /standup_list, /kudos, /bounty system
+│   ├── social.py          # /help, /birthday, /remindme, /feedback, /about, /ping, on_member_join
+│   ├── moderation.py      # /sync, /strike (with 1h auto-timeout), /slowmode, /report, /eod
+│   ├── events.py          # on_message (XP cooldown), on_reaction_add, on_voice_state_update
+│   └── scheduler.py       # Autosave cache flush & cron loop (birthdays, auto-tunes, EOD)
+└── 📁 utils/              # Reusable helpers & UI views
+    ├── helpers.py         # Level math, duration formatters, ring logger, badges
+    ├── rituals.py         # EOD embed builder, quest auto-tuner, team insights compiler
+    └── views.py           # Discord UI buttons, select dropdowns & modals (Help, Shop, Leaves)
 ```
 
 ## ⚖️ License
