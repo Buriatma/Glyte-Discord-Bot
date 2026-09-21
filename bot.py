@@ -1,5 +1,6 @@
 """Gamified office attendance + activity tracker.
 MongoDB (Atlas-ready) + in-memory cache with bulk flush every 30s.
+Made by GlyteTech — www.glyte.tech — info@glyte.tech 💜
 """
 import discord
 from discord import app_commands
@@ -1892,6 +1893,18 @@ async def feedback(interaction: discord.Interaction, text: str):
     track("commands", "feedback")
     await interaction.response.send_message(
         "📬 Noted! The bot learns from this 🧠✨", ephemeral=True)
+
+
+@bot.tree.command(name="about", description="Who made this bot? 💜")
+async def about(interaction: discord.Interaction):
+    track("commands", "about")
+    await interaction.response.send_message(embed=discord.Embed(
+        title="🤖 Glyte Discord Bot",
+        description="Attendance · Activity · Gamification for flexible teams ✨",
+        color=0x5865F2).add_field(
+        name="🏢 Made by",
+        value="**GlyteTech** 💜\n🌐 www.glyte.tech\n📧 info@glyte.tech",
+        inline=False))
 
 
 if __name__ == "__main__":

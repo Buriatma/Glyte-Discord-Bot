@@ -8,9 +8,12 @@
 ![discord.py](https://img.shields.io/badge/discord.py-2.x-5865F2?style=for-the-badge&logo=discord&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-FEE75C?style=for-the-badge)
 
 *Attendance + activity tracker with gamification — built for teams with **flexible shifts** 🕊️*
 *Check in anytime, earn XP & coins 🪙, complete quests 🗺️, climb leaderboards 🏆, spend in the shop 🏪*
+
+**Made with 💜 by [GlyteTech](https://www.glyte.tech)** · 🌐 [www.glyte.tech](https://www.glyte.tech) · 📧 [info@glyte.tech](mailto:info@glyte.tech)
 
 </div>
 
@@ -96,6 +99,7 @@
 | 🤝 `/bounty_claim <id>` | Claim a bounty task |
 | 📊 `/dashboard [hours]` | Your personal magic link — auto-logged-in as you ✨ |
 | 💌 `/feedback <text>` | Teach the bot — it learns from this 🧠 |
+| 💜 `/about` | Who made this bot — GlyteTech 🏢 |
 
 </details>
 
@@ -264,10 +268,15 @@ Glyte-Discord-Bot/
 ├── 📦 requirements.txt
 ├── 🐳 Dockerfile
 ├── 🐳 docker-compose.yml  # bot + local mongo (unused if MONGO_URI → Atlas)
-├── 🤫 .env                # YOUR secrets — private repo only 🔐
+├── 🤫 .env                # YOUR secrets — gitignored, never commit 🚫
 ├── 📝 .env.example        # safe template ✅
+├── ⚖️ LICENSE             # MIT — free to use & share 💛
 └── 📖 README.md           # you are here! 👋
 ```
+
+## ⚖️ License
+
+MIT — use it, fork it, flex it in your portfolio 💼✨. Just keep the copyright notice. See [LICENSE](LICENSE).
 
 ## 🗺️🚀 Roadmap — coming next?
 
@@ -281,10 +290,18 @@ Glyte-Discord-Bot/
 
 PRs welcome — pick one and ship it! 🚢💨
 
+## 💜 Credits
+
+Built and maintained by **[GlyteTech](https://www.glyte.tech)** 🏢✨
+🌐 Website: [www.glyte.tech](https://www.glyte.tech) · 📧 Email: [info@glyte.tech](mailto:info@glyte.tech)
+
+Need a custom bot, dashboard or automation for your team? Talk to us 💬🚀
+
 <div align="center">
 
 ![Footer](https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=120&section=footer&animation=fadeIn)
 
-**Made with 💜, ☕ and too many `/checkin` streaks 🔥**
+**Made with 💜 by [GlyteTech](https://www.glyte.tech) · ☕ and too many `/checkin` streaks 🔥**
+**🌐 [www.glyte.tech](https://www.glyte.tech) · 📧 [info@glyte.tech](mailto:info@glyte.tech)**
 
 </div>
