@@ -49,7 +49,24 @@ SUMMARY_TZ = os.getenv("SUMMARY_TZ", "UTC")
 STANDUP_CHANNEL_ID = _env_int("STANDUP_CHANNEL_ID", 0) or None
 STANDUP_TIME = os.getenv("STANDUP_TIME", "10:00")
 DASHBOARD_PORT = _env_int("DASHBOARD_PORT", 8080)
-DASHBOARD_PUBLIC_URL = os.getenv("DASHBOARD_PUBLIC_URL", f"http://localhost:{DASHBOARD_PORT}")
+
+
+def _resolve_public_url() -> str:
+    env_url = (os.getenv("DASHBOARD_PUBLIC_URL") or "").strip()
+    if env_url:
+        return env_url
+    try:
+        import urllib.request
+        with urllib.request.urlopen("https://api.ipify.org", timeout=2.0) as resp:
+            ip = resp.read().decode("utf-8").strip()
+            if ip:
+                return f"http://{ip}:{DASHBOARD_PORT}"
+    except Exception:
+        pass
+    return f"http://localhost:{DASHBOARD_PORT}"
+
+
+DASHBOARD_PUBLIC_URL = _resolve_public_url()
 BASE_DIR = Path(__file__).parent
 
 intents = discord.Intents.default()
