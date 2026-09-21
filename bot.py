@@ -5,6 +5,7 @@ Made by GlyteTech — www.glyte.tech — info@glyte.tech 💜
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
+import asyncio
 import os
 import time
 import secrets
@@ -25,18 +26,28 @@ except ImportError:  # py3.8 fallback
     ZoneInfo = None
 
 load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-MONGO_DB = os.getenv("MONGO_DB", "discord_bot")
-XP_PER_MSG = int(os.getenv("XP_PER_MSG", "10"))
-MSG_COOLDOWN_S = int(os.getenv("MSG_COOLDOWN_S", "5"))
-FLUSH_EVERY_S = int(os.getenv("FLUSH_EVERY_S", "30"))
-SUMMARY_CHANNEL_ID = int(os.getenv("SUMMARY_CHANNEL_ID") or 0) or None
+TOKEN = (os.getenv("DISCORD_TOKEN") or "").strip()
+MONGO_URI = (os.getenv("MONGO_URI") or "mongodb://localhost:27017").strip()
+MONGO_DB = (os.getenv("MONGO_DB") or "discord_bot").strip()
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int((os.getenv(name) or "").strip() or default)
+    except (ValueError, TypeError):
+        print(f"⚠️ bad {name}, using {default}")
+        return default
+
+
+XP_PER_MSG = _env_int("XP_PER_MSG", 10)
+MSG_COOLDOWN_S = _env_int("MSG_COOLDOWN_S", 5)
+FLUSH_EVERY_S = _env_int("FLUSH_EVERY_S", 30)
+SUMMARY_CHANNEL_ID = _env_int("SUMMARY_CHANNEL_ID", 0) or None
 SUMMARY_TIME = os.getenv("SUMMARY_TIME", "23:00")
 SUMMARY_TZ = os.getenv("SUMMARY_TZ", "UTC")
-STANDUP_CHANNEL_ID = int(os.getenv("STANDUP_CHANNEL_ID") or 0) or None
+STANDUP_CHANNEL_ID = _env_int("STANDUP_CHANNEL_ID", 0) or None
 STANDUP_TIME = os.getenv("STANDUP_TIME", "10:00")
-DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "8080"))
+DASHBOARD_PORT = _env_int("DASHBOARD_PORT", 8080)
 DASHBOARD_PUBLIC_URL = os.getenv("DASHBOARD_PUBLIC_URL", f"http://localhost:{DASHBOARD_PORT}")
 BASE_DIR = Path(__file__).parent
 
@@ -50,7 +61,12 @@ intents.messages = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-mongo = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
+mongo = motor.motor_asyncio.AsyncIOMotorClient(
+    MONGO_URI,
+    serverSelectionTimeoutMS=8000,  # fail fast, never hang a command 30s
+    connectTimeoutMS=8000,
+    socketTimeoutMS=20000,
+)
 db = mongo[MONGO_DB]
 users_col = db["users"]
 leaves_col = db["leaves"]
@@ -263,9 +279,10 @@ def track(key: str, sub: Optional[str] = None):
         except Exception as e:
             print(f"track failed: {e}")
     try:
-        bot.loop.create_task(_go())
-    except Exception:
-        pass
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+    loop.create_task(_go())
 
 
 async def approved_leave_map():
@@ -577,7 +594,31 @@ async def on_ready():
         autosave.start()
     if not scheduler.is_running():
         scheduler.start()
-    await start_dashboard()
+    try:
+        await start_dashboard()
+    except Exception as e:
+        blog(f"dashboard failed to start (bot still runs): {e}")
+    blog("✅ ready — commands live")
+
+
+@bot.tree.error
+async def _tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    try:
+        detail = str(error)[:300] if str(error) else type(error).__name__
+        blog(f"❌ /{(interaction.command.name if interaction.command else '?')}: {type(error).__name__}: {detail}")
+        msg = f"❌ Something broke: `{type(error).__name__}`. Check `docker compose logs bot` 📜"
+        if interaction.response.is_done():
+            await interaction.followup.send(msg, ephemeral=True)
+        else:
+            await interaction.response.send_message(msg, ephemeral=True)
+    except Exception:
+        pass
+
+
+@bot.tree.command(name="ping", description="Health check — needs no database 🏓")
+async def ping(interaction: discord.Interaction):
+    ms = round(bot.latency * 1000)
+    await interaction.response.send_message(f"🏓 Pong! {ms}ms · bot is alive ✅")
 
 
 @bot.event
@@ -1584,7 +1625,7 @@ async def api_bounty_post(request):
     coins = int(body.get("coins", 0) or 0)
     if not body.get("title") or coins <= 0:
         return web.json_response({"ok": False, "error": "title + positive coins needed"})
-    poster = request["dash_user"]["created_by"]
+    poster = request["dash_user"].get("created_by") or request["dash_user"]["user_id"]
     u = await get_user(poster)
     if u["coins"] < coins:
         return web.json_response({"ok": False, "error": f"only {u['coins']} 🪙 available"})
@@ -1841,6 +1882,7 @@ async def start_dashboard():
 @bot.tree.command(name="dashboard", description="Your private dashboard magic link (only you see it)")
 @app_commands.describe(hours="Link validity in hours (default 24, max 72)")
 async def dashboard_cmd(interaction: discord.Interaction, hours: int = 24):
+    await interaction.response.defer(ephemeral=True)
     hours = max(1, min(hours, 72))
     uid = str(interaction.user.id)
     is_admin = bool(interaction.user.guild_permissions.manage_guild)
@@ -1857,7 +1899,7 @@ async def dashboard_cmd(interaction: discord.Interaction, hours: int = 24):
     blog(f"📊 dashboard link for {interaction.user.display_name} (admin={is_admin})")
     role = "👑 Admin control room" if is_admin else "🙋 Your personal hub"
     link = f"{DASHBOARD_PUBLIC_URL.rstrip('/')}/dash/?token={token}"
-    await interaction.response.send_message(
+    await interaction.followup.send(
         f"📊 **Your magic dashboard link** ✨ — {role}, auto-logged-in as you\n{link}\n"
         f"⏳ Valid **{hours}h** · only this link knows it's you 🔒",
         ephemeral=True)
