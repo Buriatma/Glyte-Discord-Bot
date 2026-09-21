@@ -417,6 +417,7 @@ class HelpSelect(discord.ui.Select):
 
 
 class HelpView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, user_id: int):
         super().__init__(timeout=300)
+        self.user_id = user_id
         self.add_item(HelpSelect())
