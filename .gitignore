@@ -1,5 +1,23 @@
+# Environment & secrets
 .env
+*.env
+!.env.example
+
+# Python
 __pycache__/
-*.pyc
-.env
-.env
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Docker volumes & local data
+mongo-data/
+
+# OS & Editor files
+.DS_Store
+.vscode/
+.idea/
+*.log

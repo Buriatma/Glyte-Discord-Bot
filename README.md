@@ -36,7 +36,7 @@
 - 🎁 Streak bonuses — bonus coins at **7 / 14 / 30 / 60 / 100-day** streaks + exclusive badges 🏅
 - 🎙️ Voice days count too — hang out in voice, get attendance credit
 - 🗓️ `/attendance [@member] [days]` — presence history: `✅ check-in` · `🎙️ voice` · `🌴 approved leave`
-- 🌴 Leave flow — `/leave_apply` → `/my_leaves` → managers approve with `/leave_list` + `/leave_decide`
+- 🌴 Leave flow — `/leave_apply` (interactive popup modal or slash command) → creates card with 1-click **[Approve ✅]** and **[Reject ❌]** buttons for managers + DM notifications
 - 🌙 **EOD summary** — every night the bot auto-posts who was present ✅, absent ❌, and on leave 🌴 (+ `/eod` to trigger manually)
 
 ## 📊 Activity tracking (always on ⚡)
@@ -44,14 +44,16 @@
 - 💬 **Messages** → XP + coins (5s anti-farm cooldown 🛡️)
 - 🎙️ **Voice sessions** → XP per minute + coins, tracked join → leave
 - ⭐ **Reactions** → XP + coins
+- 🎯 **Deep Work Focus** — `/focus [minutes] [task]` Pomodoro deep work sprint with live timer & rewards
 - 🗂️ Per-day breakdowns stored for every member (powers quests, reports & seasons)
 
 ## 🎮 Gamification (the fun part 🥳)
 
 - 📶 **Levels** — XP progress bar, loud level-up announcements 📢 + auto-grant roles (`/reward_add`)
 - 🪙 **Coins** — trickle in from everything; claim extra with `/daily` 🎁
+- 🎰 **Lucky Wheel (`/spin`)** — free daily spin (extra spins 25 🪙) for coins, XP, and `lucky-spinner` / `jackpot-king` badges!
 - 🗺️ **Daily quests** — ✅ check-in · 💬 chatter · 🎙️ voicer · ⭐ reactor (`/quests` → `/quest_claim`)
-- 🏅 **Badges** — `first-checkin` 🌱 · `streak-7` 🔥 · `streak-30` 💎 · `chatter-1000` 💬 · `voicer-100h` 🎙️ · `rich-5k` 💰 · `season-champion` 👑 (`/badges`)
+- 🏅 **Badges** — `first-checkin` 🌱 · `streak-7` 🔥 · `streak-30` 💎 · `deep-worker` 🎯 · `chatter-1000` 💬 · `voicer-100h` 🎙️ · `rich-5k` 💰 · `jackpot-king` 👑 (`/badges`)
 - 🏪 **Shop** — redeemable team perks (`/shop` → `/buy` → `/inventory`)
 - 🏆 **Leaderboards** — XP · coins · messages · voice · check-ins (`/leaderboard`)
 - 🏁 **Monthly seasons** — fresh race every month, previous champion crowned 👑 with bonus coins (`/season`)
@@ -91,12 +93,14 @@
 | 🎒 `/inventory` | Your owned items |
 | 🏅 `/badges [@member]` | Badge showcase |
 | 🗓️ `/attendance [@member] [days]` | Presence history (default 7d, max 30d) |
-| 🌴 `/leave_apply <days> <reason>` | Apply for leave |
+| 🌴 `/leave_apply [days] [reason]` | Apply for leave (interactive popup modal + 1-click manager buttons) |
 | 📝 `/my_leaves` | Your leave requests |
+| 🎯 `/focus [minutes] [task]` | Pomodoro deep work session (5–120m) with XP & coin rewards |
+| 🎰 `/spin` | Daily Lucky Wheel — win coins, XP, and rare badges (free daily!) |
 | 🧍 `/standup` | Post standup update (yesterday / today / blockers) |
 | 🙌 `/kudos @member <reason>` | Shout-out + coin tip |
 | 🎯 `/bounty_list` | Open bounties |
-| 🤝 `/bounty_claim <id>` | Claim a bounty task |
+| 🤝 `/bounty_claim <id>` | Claim a bounty task (generates 1-click payout card) |
 | 📊 `/dashboard [hours]` | Your personal magic link — auto-logged-in as you ✨ |
 | 💌 `/feedback <text>` | Teach the bot — it learns from this 🧠 |
 | 💜 `/about` | Who made this bot — GlyteTech 🏢 |

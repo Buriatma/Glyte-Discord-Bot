@@ -8,6 +8,7 @@ from discord.ext import commands, tasks
 import asyncio
 import os
 import time
+import random
 import secrets
 import logging
 from collections import deque
@@ -27,8 +28,8 @@ except ImportError:  # py3.8 fallback
 
 load_dotenv()
 TOKEN = (os.getenv("DISCORD_TOKEN") or "").strip()
-MONGO_URI = (os.getenv("MONGO_URI") or "mongodb://localhost:27017").strip()
-MONGO_DB = (os.getenv("MONGO_DB") or "discord_bot").strip()
+MONGO_URI = (os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or "mongodb://localhost:27017").strip()
+MONGO_DB = (os.getenv("MONGO_DB") or os.getenv("MONGO_DATABASE") or os.getenv("MONGODB_DATABASE") or "discord_bot").strip()
 
 
 def _env_int(name: str, default: int) -> int:
@@ -52,12 +53,15 @@ DASHBOARD_PUBLIC_URL = os.getenv("DASHBOARD_PUBLIC_URL", f"http://localhost:{DAS
 BASE_DIR = Path(__file__).parent
 
 intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
 intents.reactions = True
 intents.voice_states = True
 intents.guilds = True
 intents.messages = True
+# Privileged intents: opt-in via env so bot can run even if not enabled in Discord Dev Portal
+if (os.getenv("INTENTS_MEMBERS") or "false").lower() in ("true", "1", "yes"):
+    intents.members = True
+if (os.getenv("INTENTS_MESSAGE_CONTENT") or "false").lower() in ("true", "1", "yes"):
+    intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -97,6 +101,8 @@ DEFAULT_USER = {
     "kudos_day": {},
     "seasons": {},
     "daily": {},
+    "last_spin": None,
+    "focus_minutes": 0,
 }
 
 QUESTS = {
@@ -439,6 +445,8 @@ def grant_badges(u: dict) -> list:
         give("voicer-100h")
     if u.get("coins", 0) >= 5000:
         give("rich-5k")
+    if u.get("focus_minutes", 0) >= 100:
+        give("deep-worker")
     u["badges"] = sorted(badges)
     return new
 
@@ -604,9 +612,11 @@ async def on_ready():
 @bot.tree.error
 async def _tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     try:
-        detail = str(error)[:300] if str(error) else type(error).__name__
-        blog(f"❌ /{(interaction.command.name if interaction.command else '?')}: {type(error).__name__}: {detail}")
-        msg = f"❌ Something broke: `{type(error).__name__}`. Check `docker compose logs bot` 📜"
+        cause = getattr(error, "original", error)
+        cause_name = type(cause).__name__
+        detail = str(cause)[:250] if str(cause) else cause_name
+        blog(f"❌ /{(interaction.command.name if interaction.command else '?')}: {cause_name}: {detail}")
+        msg = f"❌ Something broke: `{cause_name}` ({detail[:120]}). Check `docker compose logs bot` 📜"
         if interaction.response.is_done():
             await interaction.followup.send(msg, ephemeral=True)
         else:
@@ -741,22 +751,24 @@ async def checkin(interaction: discord.Interaction):
 
 @bot.tree.command(name="daily", description="Claim daily coins (every 24h window by date)")
 async def daily(interaction: discord.Interaction):
+    await interaction.response.defer()
     u = await get_user(interaction.user.id)
     today = today_str()
     if u.get("last_daily") == today:
-        await interaction.response.send_message("⏳ Already claimed today. Come back tomorrow!",
+        await interaction.followup.send("⏳ Already claimed today. Come back tomorrow!",
                                                 ephemeral=True)
         return
     u["last_daily"] = today
     reward = 100 + min(u.get("streak", 0), 30) * 5
     u["coins"] += reward
     mark_dirty(interaction.user.id)
-    await interaction.response.send_message(f"🎁 +{reward} coins! Balance: **{u['coins']}**")
+    await interaction.followup.send(f"🎁 +{reward} coins! Balance: **{u['coins']}**")
 
 
 @bot.tree.command(name="mystats", description="Show your (or another member's) gamified stats")
 @app_commands.describe(member="Member to look up (default: you)")
 async def mystats(interaction: discord.Interaction, member: Optional[discord.Member] = None):
+    await interaction.response.defer()
     member = member or interaction.user
     u = await get_user(member.id)
     lvl, into, need = xp_into_level(u["xp"])
@@ -772,7 +784,7 @@ async def mystats(interaction: discord.Interaction, member: Optional[discord.Mem
     embed.add_field(name="🔥 Streak", value=str(u["streak"]), inline=True)
     embed.add_field(name="🙌 Kudos", value=str(u.get("kudos_received", 0)), inline=True)
     embed.add_field(name="🏅 Badges", value=", ".join(u.get("badges", [])[:10]) or "—", inline=False)
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
 
 @bot.tree.command(name="leaderboard", description="Top members by XP, coins, messages, voice, check-ins")
@@ -820,6 +832,7 @@ async def leaderboard(interaction: discord.Interaction,
 
 @bot.tree.command(name="quests", description="Show today's quests and progress")
 async def quests(interaction: discord.Interaction):
+    await interaction.response.defer()
     u = await get_user(interaction.user.id)
     day = today_str()
     targets = await eff_targets()
@@ -835,7 +848,7 @@ async def quests(interaction: discord.Interaction):
         unit = "" if qid in ("checkin",) else f"/{tgt}"
         lines.append(f"{status} **{q['name']}** — {min(p, tgt)}{unit} "
                      f"(+{q['xp']} XP, +{q['coins']} 🪙){claim}\n_{q['desc']}_")
-    await interaction.response.send_message(embed=discord.Embed(
+    await interaction.followup.send(embed=discord.Embed(
         title="🗺️ Today's Quests", description="\n\n".join(lines), color=0x57F287).set_footer(
         text="🎯 Targets self-tune daily to fit the team"))
 
@@ -878,11 +891,12 @@ async def quest_claim(interaction: discord.Interaction, quest_id: str):
 
 @bot.tree.command(name="shop", description="Show the rewards shop")
 async def shop(interaction: discord.Interaction):
+    await interaction.response.defer()
     cfg = await get_config()
     items = cfg.get("shop", SHOP_DEFAULT)
     u = await get_user(interaction.user.id)
     lines = [f"`{it['id']}` **{it['name']}** — {it['cost']} 🪙\n_{it['desc']}_" for it in items]
-    await interaction.response.send_message(embed=discord.Embed(
+    await interaction.followup.send(embed=discord.Embed(
         title=f"🏪 Shop (balance: {u['coins']} 🪙)",
         description="\n\n".join(lines), color=0xEB459E))
 
@@ -910,19 +924,21 @@ async def buy(interaction: discord.Interaction, item_id: str):
 
 @bot.tree.command(name="inventory", description="Show your owned items")
 async def inventory(interaction: discord.Interaction):
+    await interaction.response.defer()
     u = await get_user(interaction.user.id)
     inv = u.get("inventory", [])
     desc = "\n".join(f"• **{it['name']}** (`{it['id']}`, {it.get('at', '?')})" for it in inv[-20:]) or "Empty. Visit /shop!"
-    await interaction.response.send_message(embed=discord.Embed(
+    await interaction.followup.send(embed=discord.Embed(
         title=f"🎒 {interaction.user.display_name}'s Inventory", description=desc))
 
 
 @bot.tree.command(name="badges", description="Show badges")
 @app_commands.describe(member="Member (default: you)")
 async def badges(interaction: discord.Interaction, member: Optional[discord.Member] = None):
+    await interaction.response.defer()
     member = member or interaction.user
     u = await get_user(member.id)
-    await interaction.response.send_message(embed=discord.Embed(
+    await interaction.followup.send(embed=discord.Embed(
         title=f"🏅 {member.display_name}'s Badges",
         description=", ".join(f"`{b}`" for b in u.get("badges", [])) or "No badges yet.",
         color=0xFEE75C))
@@ -932,6 +948,7 @@ async def badges(interaction: discord.Interaction, member: Optional[discord.Memb
 @app_commands.describe(member="Member (default: you)", days="Last N days (max 30)")
 async def attendance(interaction: discord.Interaction,
                      member: Optional[discord.Member] = None, days: int = 7):
+    await interaction.response.defer()
     member = member or interaction.user
     days = max(1, min(days, 30))
     u = await get_user(member.id)
@@ -953,29 +970,188 @@ async def attendance(interaction: discord.Interaction,
         c = "✅" if d in checkins else ("🌴" if d in leave_days else "⬜")
         v = " 🎙️" if d in voice_days else ""
         lines.append(f"{c} {d}{v}")
-    await interaction.response.send_message(embed=discord.Embed(
+    await interaction.followup.send(embed=discord.Embed(
         title=f"🗓️ {member.display_name} — {present}/{days} days",
         description="\n".join(lines), color=0x57F287).set_footer(
         text="✅ checkin · 🎙️ voice · 🌴 approved leave"))
 
 
-# ---- leaves ----
-@bot.tree.command(name="leave_apply", description="Apply for leave")
-@app_commands.describe(days="Number of days", reason="Reason", from_date="Start YYYY-MM-DD (default today)")
-async def leave_apply(interaction: discord.Interaction, days: int,
-                      reason: str, from_date: Optional[str] = None):
+# ---- leaves (with interactive modals & one-click approve/reject buttons) ----
+class LeaveDecisionView(discord.ui.View):
+    def __init__(self, leave_id: str, applicant_id: str, days: int = 1):
+        super().__init__(timeout=None)
+        self.leave_id = leave_id
+        self.applicant_id = applicant_id
+        self.days = days
+
+    @discord.ui.button(label="Approve ✅", style=discord.ButtonStyle.success)
+    async def approve_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not interaction.user.guild_permissions.manage_guild:
+            await interaction.response.send_message("❌ Only managers can approve leaves.", ephemeral=True)
+            return
+        await interaction.response.defer()
+        try:
+            oid = ObjectId(self.leave_id)
+        except Exception:
+            await interaction.followup.send("❌ Bad leave ID.", ephemeral=True)
+            return
+        res = await leaves_col.update_one(
+            {"_id": oid, "status": "pending"},
+            {"$set": {"status": "approved", "decided_by": str(interaction.user.id),
+                      "decided_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        if not res.modified_count:
+            await interaction.followup.send("⚠️ Leave was already decided or not found.", ephemeral=True)
+            return
+
+        for child in self.children:
+            child.disabled = True
+
+        orig_embed = interaction.message.embeds[0] if interaction.message.embeds else None
+        new_embed = orig_embed.copy() if orig_embed else discord.Embed(title="📝 Leave Application")
+        new_embed.color = 0x57F287
+        new_embed.add_field(name="Decision", value=f"✅ **Approved** by {interaction.user.mention}", inline=False)
+        await interaction.message.edit(embed=new_embed, view=self)
+        await interaction.followup.send(f"✅ Approved leave for <@{self.applicant_id}>!", ephemeral=True)
+
+        try:
+            applicant = interaction.guild.get_member(int(self.applicant_id))
+            if applicant:
+                await applicant.send(f"🌴 Good news! Your leave request for **{self.days}d** has been **approved** by {interaction.user.display_name}! ✅")
+        except Exception:
+            pass
+
+    @discord.ui.button(label="Reject ❌", style=discord.ButtonStyle.danger)
+    async def reject_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not interaction.user.guild_permissions.manage_guild:
+            await interaction.response.send_message("❌ Only managers can reject leaves.", ephemeral=True)
+            return
+        await interaction.response.defer()
+        try:
+            oid = ObjectId(self.leave_id)
+        except Exception:
+            await interaction.followup.send("❌ Bad leave ID.", ephemeral=True)
+            return
+        res = await leaves_col.update_one(
+            {"_id": oid, "status": "pending"},
+            {"$set": {"status": "rejected", "decided_by": str(interaction.user.id),
+                      "decided_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        if not res.modified_count:
+            await interaction.followup.send("⚠️ Leave was already decided or not found.", ephemeral=True)
+            return
+
+        for child in self.children:
+            child.disabled = True
+
+        orig_embed = interaction.message.embeds[0] if interaction.message.embeds else None
+        new_embed = orig_embed.copy() if orig_embed else discord.Embed(title="📝 Leave Application")
+        new_embed.color = 0xED4245
+        new_embed.add_field(name="Decision", value=f"❌ **Rejected** by {interaction.user.mention}", inline=False)
+        await interaction.message.edit(embed=new_embed, view=self)
+        await interaction.followup.send(f"❌ Rejected leave for <@{self.applicant_id}>.", ephemeral=True)
+
+        try:
+            applicant = interaction.guild.get_member(int(self.applicant_id))
+            if applicant:
+                await applicant.send(f"⚠️ Your leave request for **{self.days}d** was **rejected** by {interaction.user.display_name}.")
+        except Exception:
+            pass
+
+
+class LeaveApplyModal(discord.ui.Modal, title="📝 Apply for Leave"):
+    from_date_input = discord.ui.TextInput(
+        label="Start Date (YYYY-MM-DD)",
+        placeholder="e.g. 2026-09-25 (leave empty for today)",
+        required=False,
+        max_length=10
+    )
+    days_input = discord.ui.TextInput(
+        label="Number of Days (1-30)",
+        placeholder="1",
+        default="1",
+        min_length=1,
+        max_length=2
+    )
+    reason_input = discord.ui.TextInput(
+        label="Reason for Leave",
+        style=discord.TextStyle.paragraph,
+        placeholder="Vacation, family event, medical, personal...",
+        required=True,
+        max_length=300
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        try:
+            days = int(str(self.days_input.value).strip())
+            days = max(1, min(days, 30))
+        except ValueError:
+            await interaction.followup.send("❌ Days must be a valid number.", ephemeral=True)
+            return
+
+        date_val = str(self.from_date_input.value).strip()
+        try:
+            d0 = datetime.strptime(date_val, "%Y-%m-%d").date() if date_val else datetime.now(timezone.utc).date()
+        except ValueError:
+            await interaction.followup.send("❌ Date must be in YYYY-MM-DD format.", ephemeral=True)
+            return
+
+        reason = str(self.reason_input.value).strip()
+        doc = {"user_id": str(interaction.user.id), "days": days, "reason": reason,
+               "from": d0.isoformat(), "status": "pending",
+               "created_at": datetime.now(timezone.utc).isoformat()}
+        res = await leaves_col.insert_one(doc)
+        leave_id = str(res.inserted_id)
+
+        embed = discord.Embed(
+            title="📝 Leave Application Submitted",
+            description=f"**Applicant**: {interaction.user.mention}\n"
+                        f"**Duration**: {days} day(s)\n"
+                        f"**Start Date**: `{d0.isoformat()}`\n"
+                        f"**Reason**: {reason}",
+            color=0xFEE75C
+        )
+        embed.set_footer(text=f"Leave ID: {leave_id} · Managers can approve or reject below")
+        view = LeaveDecisionView(leave_id, str(interaction.user.id), days)
+        await interaction.followup.send(embed=embed, view=view)
+
+
+@bot.tree.command(name="leave_apply", description="Apply for leave (interactive modal form or direct args)")
+@app_commands.describe(days="Number of days (opens popup form if omitted)", reason="Reason", from_date="Start YYYY-MM-DD")
+async def leave_apply(interaction: discord.Interaction,
+                      days: Optional[int] = None,
+                      reason: Optional[str] = None,
+                      from_date: Optional[str] = None):
+    if days is None or reason is None:
+        await interaction.response.send_modal(LeaveApplyModal())
+        return
+
+    await interaction.response.defer()
     days = max(1, min(days, 30))
     try:
         d0 = datetime.strptime(from_date, "%Y-%m-%d").date() if from_date else datetime.now(timezone.utc).date()
     except ValueError:
-        await interaction.response.send_message("from_date must be YYYY-MM-DD.", ephemeral=True)
+        await interaction.followup.send("❌ from_date must be YYYY-MM-DD.", ephemeral=True)
         return
+
     doc = {"user_id": str(interaction.user.id), "days": days, "reason": reason,
            "from": d0.isoformat(), "status": "pending",
            "created_at": datetime.now(timezone.utc).isoformat()}
     res = await leaves_col.insert_one(doc)
-    await interaction.response.send_message(
-        f"📝 Leave #{res.inserted_id} for **{days}d** from {d0} recorded as pending.")
+    leave_id = str(res.inserted_id)
+
+    embed = discord.Embed(
+        title="📝 Leave Application Submitted",
+        description=f"**Applicant**: {interaction.user.mention}\n"
+                    f"**Duration**: {days} day(s)\n"
+                    f"**Start Date**: `{d0.isoformat()}`\n"
+                    f"**Reason**: {reason}",
+        color=0xFEE75C
+    )
+    embed.set_footer(text=f"Leave ID: {leave_id} · Managers can approve or reject below")
+    view = LeaveDecisionView(leave_id, str(interaction.user.id), days)
+    await interaction.followup.send(embed=embed, view=view)
 
 
 @bot.tree.command(name="my_leaves", description="Show your leave requests")
@@ -1275,26 +1451,84 @@ async def bounty_list(interaction: discord.Interaction):
     await interaction.response.send_message("\n\n".join(lines))
 
 
+class BountyDecisionView(discord.ui.View):
+    def __init__(self, bounty_id: str, poster_id: str, claimer_id: str, coins: int, title: str):
+        super().__init__(timeout=None)
+        self.bounty_id = bounty_id
+        self.poster_id = poster_id
+        self.claimer_id = claimer_id
+        self.coins = coins
+        self.title = title
+
+    @discord.ui.button(label="Approve Work & Pay 💰", style=discord.ButtonStyle.success)
+    async def approve_pay(self, interaction: discord.Interaction, button: discord.ui.Button):
+        is_poster = str(interaction.user.id) == self.poster_id
+        is_manager = bool(interaction.user.guild_permissions.manage_guild)
+        if not (is_poster or is_manager):
+            await interaction.response.send_message("❌ Only the bounty poster or a manager can approve payout.", ephemeral=True)
+            return
+        await interaction.response.defer()
+        try:
+            oid = ObjectId(self.bounty_id)
+        except Exception:
+            await interaction.followup.send("❌ Bad bounty ID.", ephemeral=True)
+            return
+        res = await bounties_col.update_one({"_id": oid, "status": "claimed"}, {"$set": {"status": "done"}})
+        if not res.modified_count:
+            await interaction.followup.send("⚠️ Bounty was already paid or not claimed.", ephemeral=True)
+            return
+
+        u = await get_user(self.claimer_id)
+        u["coins"] += self.coins
+        u["xp"] += 25
+        bump_season(u, xp=25)
+        grant_badges(u)
+        mark_dirty(self.claimer_id)
+
+        for child in self.children:
+            child.disabled = True
+
+        orig_embed = interaction.message.embeds[0] if interaction.message.embeds else None
+        new_embed = orig_embed.copy() if orig_embed else discord.Embed(title="🎯 Bounty Complete")
+        new_embed.color = 0x57F287
+        new_embed.add_field(name="Payout Status", value=f"💰 **{self.coins} 🪙** paid to <@{self.claimer_id}> (+25 XP) by {interaction.user.mention}!", inline=False)
+        await interaction.message.edit(embed=new_embed, view=self)
+        await interaction.followup.send(f"💰 Payout complete! Paid **{self.coins} 🪙** to <@{self.claimer_id}>.", ephemeral=True)
+
+
 @bot.tree.command(name="bounty_claim", description="Claim an open bounty task")
 @app_commands.describe(bounty_id="Bounty id from /bounty_list")
 async def bounty_claim(interaction: discord.Interaction, bounty_id: str):
+    await interaction.response.defer()
     try:
         oid = ObjectId(bounty_id)
     except Exception:
-        await interaction.response.send_message("Bad bounty id.", ephemeral=True)
+        await interaction.followup.send("❌ Bad bounty id.", ephemeral=True)
         return
     doc = await bounties_col.find_one({"_id": oid})
     if not doc or doc["status"] != "open":
-        await interaction.response.send_message("Not open.", ephemeral=True)
+        await interaction.followup.send("⚠️ That bounty is not open.", ephemeral=True)
         return
-    if doc["poster_id"] == str(interaction.user.id):
-        await interaction.response.send_message("❌ Can't claim your own bounty.", ephemeral=True)
+    if doc.get("poster_id") == str(interaction.user.id):
+        await interaction.followup.send("❌ Can't claim your own bounty.", ephemeral=True)
         return
     await bounties_col.update_one(
         {"_id": oid, "status": "open"},
         {"$set": {"status": "claimed", "claimer_id": str(interaction.user.id)}})
-    await interaction.response.send_message(
-        f"🤝 {interaction.user.mention} claimed **{doc['title']}**! Poster approves with `/bounty_approve`.")
+
+    poster_id = str(doc.get("poster_id", ""))
+    embed = discord.Embed(
+        title="🤝 Bounty Claimed!",
+        description=f"**Task**: **{doc['title']}**\n"
+                    f"**Claimer**: {interaction.user.mention}\n"
+                    f"**Reward**: {doc['coins']} 🪙 (+25 XP)\n"
+                    f"**Poster**: <@{poster_id}>\n\n"
+                    f"_{doc.get('description', '—')}_\n\n"
+                    f"When work is done, the poster or a manager can click below to release payout!",
+        color=0x5865F2
+    )
+    view = BountyDecisionView(bounty_id, poster_id, str(interaction.user.id), int(doc["coins"]), doc["title"])
+    await interaction.followup.send(embed=embed, view=view)
 
 
 @bot.tree.command(name="bounty_approve", description="Approve work + pay the claimer (poster/managers)")
@@ -1358,6 +1592,213 @@ async def season(interaction: discord.Interaction, month: Optional[str] = None):
         title=f"🏁 Season {month}",
         description=desc, color=0xEB459E).set_footer(
         text="Monthly race · winner gets 1000 coins + 👑 badge"))
+
+
+# ---- deep work focus & lucky wheel gamification ----
+_active_focus: dict = {}
+
+
+class FocusControlView(discord.ui.View):
+    def __init__(self, uid: str, task_name: str, minutes: int, start_ts: float, reward_xp: int, reward_coins: int):
+        super().__init__(timeout=None)
+        self.uid = uid
+        self.task_name = task_name
+        self.minutes = minutes
+        self.start_ts = start_ts
+        self.reward_xp = reward_xp
+        self.reward_coins = reward_coins
+
+    @discord.ui.button(label="End Focus Early ⏹️", style=discord.ButtonStyle.secondary)
+    async def end_early(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if str(interaction.user.id) != self.uid:
+            await interaction.response.send_message("❌ This is not your focus session.", ephemeral=True)
+            return
+        await interaction.response.defer()
+        session = _active_focus.pop(self.uid, None)
+        if session and session.get("task_handle"):
+            session["task_handle"].cancel()
+
+        elapsed_min = max(1, int((time.time() - self.start_ts) // 60))
+        for child in self.children:
+            child.disabled = True
+
+        if elapsed_min >= 5:
+            frac = min(1.0, elapsed_min / self.minutes)
+            earned_xp = max(5, int(self.reward_xp * frac))
+            earned_coins = max(2, int(self.reward_coins * frac))
+            u = await get_user(self.uid)
+            u["xp"] += earned_xp
+            u["coins"] += earned_coins
+            u.setdefault("focus_minutes", 0)
+            u["focus_minutes"] += elapsed_min
+            bump_season(u, xp=earned_xp)
+            grant_badges(u)
+            mark_dirty(self.uid)
+            msg = f"⏹️ **Focus ended early.** Focused for **{elapsed_min}m**.\nProrated rewards: +{earned_xp} XP · +{earned_coins} 🪙"
+        else:
+            msg = f"⏹️ **Focus cancelled** ({elapsed_min}m). Focus for at least 5m to earn rewards!"
+
+        orig = interaction.message.embeds[0] if interaction.message.embeds else None
+        new_emb = orig.copy() if orig else discord.Embed(title="🎯 Focus Session")
+        new_emb.color = 0x747F8D
+        new_emb.add_field(name="Session Ended", value=msg, inline=False)
+        await interaction.message.edit(embed=new_emb, view=self)
+        await interaction.followup.send(msg, ephemeral=True)
+
+    @discord.ui.button(label="Check Status ⏱️", style=discord.ButtonStyle.primary)
+    async def status_check(self, interaction: discord.Interaction, button: discord.ui.Button):
+        elapsed_sec = int(time.time() - self.start_ts)
+        rem_sec = max(0, (self.minutes * 60) - elapsed_sec)
+        el_m, el_s = divmod(elapsed_sec, 60)
+        re_m, re_s = divmod(rem_sec, 60)
+        await interaction.response.send_message(
+            f"⏱️ **Focus Status**: {el_m}m {el_s}s elapsed · **{re_m}m {re_s}s remaining** for *{self.task_name}*.",
+            ephemeral=True
+        )
+
+
+@bot.tree.command(name="focus", description="Start a Pomodoro deep work session with rewards (5-120 min) 🎯")
+@app_commands.describe(minutes="Duration in minutes (default 25)", task="What you are focusing on")
+async def focus(interaction: discord.Interaction, minutes: int = 25, task: Optional[str] = "Deep Work"):
+    await interaction.response.defer()
+    uid = str(interaction.user.id)
+    if uid in _active_focus:
+        await interaction.followup.send(
+            "⏳ You already have an active focus session! Use the button on your active card to end it early or check status.",
+            ephemeral=True
+        )
+        return
+
+    minutes = max(5, min(minutes, 120))
+    task_name = (task or "Deep Work")[:80]
+    reward_xp = max(10, int(minutes * 0.8))
+    reward_coins = max(5, int(minutes * 0.5))
+    now = time.time()
+    end_ts = now + (minutes * 60)
+
+    embed = discord.Embed(
+        title="🎯 Deep Work Focus Session Started!",
+        color=0x5865F2,
+        description=f"**Member**: {interaction.user.mention}\n"
+                    f"**Task**: **{task_name}**\n"
+                    f"**Duration**: {minutes} minutes\n"
+                    f"**Finishes**: <t:{int(end_ts)}:R> (<t:{int(end_ts)}:t>)\n\n"
+                    f"🏆 **Completion Rewards**: +{reward_xp} XP · +{reward_coins} 🪙\n"
+                    f"💡 *Mute distractions, open your editor, and lock in!*"
+    )
+    view = FocusControlView(uid, task_name, minutes, now, reward_xp, reward_coins)
+    msg = await interaction.followup.send(embed=embed, view=view)
+
+    async def _focus_timer():
+        try:
+            await asyncio.sleep(minutes * 60)
+            if uid not in _active_focus:
+                return
+            _active_focus.pop(uid, None)
+            u = await get_user(uid)
+            u["xp"] += reward_xp
+            u["coins"] += reward_coins
+            u.setdefault("focus_minutes", 0)
+            u["focus_minutes"] += minutes
+            bump_season(u, xp=reward_xp)
+            new_badges = grant_badges(u)
+            mark_dirty(uid)
+            track("commands", "focus_complete")
+
+            try:
+                for child in view.children:
+                    child.disabled = True
+                fin_emb = embed.copy()
+                fin_emb.color = 0x57F287
+                fin_emb.add_field(name="Status", value=f"✅ **Session Completed!** (+{reward_xp} XP, +{reward_coins} 🪙)", inline=False)
+                await msg.edit(embed=fin_emb, view=view)
+            except Exception:
+                pass
+
+            badge_text = f" 🏅 New badge: `{', '.join(new_badges)}`!" if new_badges else ""
+            congrats = (f"🎉 **Focus Session Complete!** {interaction.user.mention} wrapped up **{minutes}m** of **{task_name}**! "
+                        f"Awarded +{reward_xp} XP, +{reward_coins} 🪙.{badge_text} Take a 5-minute break! ☕")
+            try:
+                if interaction.channel:
+                    await interaction.channel.send(congrats)
+            except Exception:
+                pass
+        except asyncio.CancelledError:
+            pass
+
+    task_handle = asyncio.create_task(_focus_timer())
+    _active_focus[uid] = {
+        "task_name": task_name, "minutes": minutes, "start_ts": now,
+        "reward_xp": reward_xp, "reward_coins": reward_coins,
+        "task_handle": task_handle
+    }
+
+
+@bot.tree.command(name="spin", description="Spin the Daily Lucky Wheel for coins, XP, and badges! 🎰")
+async def spin(interaction: discord.Interaction):
+    await interaction.response.defer()
+    uid = str(interaction.user.id)
+    u = await get_user(uid)
+    today = today_str()
+    is_free = (u.get("last_spin") != today)
+    cost = 0 if is_free else 25
+
+    if not is_free and u.get("coins", 0) < cost:
+        await interaction.followup.send(
+            f"⏳ You already used your free spin today!\nExtra spins cost **{cost} 🪙** (your balance: {u.get('coins', 0)} 🪙).\nCome back tomorrow or earn coins from check-ins & quests!",
+            ephemeral=True
+        )
+        return
+
+    if not is_free:
+        u["coins"] -= cost
+    else:
+        u["last_spin"] = today
+
+    # Prizes: (label, coins, xp, badge, weight)
+    prizes = [
+        ("🪙 50 Coins", 50, 0, None, 28),
+        ("🪙 120 Coins", 120, 0, None, 18),
+        ("🪙 250 Coins", 250, 0, None, 10),
+        ("✨ +40 XP", 0, 40, None, 20),
+        ("✨ +100 XP", 0, 100, None, 12),
+        ("🏅 Mystery Badge + 100 Coins", 100, 20, "lucky-spinner", 8),
+        ("💥 JACKPOT! 777 Coins + 200 XP", 777, 200, "jackpot-king", 4),
+    ]
+    weights = [p[4] for p in prizes]
+    chosen = random.choices(prizes, weights=weights, k=1)[0]
+    label, p_coins, p_xp, p_badge, _ = chosen
+
+    u["coins"] += p_coins
+    u["xp"] += p_xp
+    bump_season(u, xp=p_xp)
+    new_badge = False
+    if p_badge:
+        badges = set(u.get("badges", []))
+        if p_badge not in badges:
+            badges.add(p_badge)
+            new_badge = True
+        u["badges"] = sorted(badges)
+
+    mark_dirty(uid)
+    track("commands", "spin")
+
+    fee_text = "🎁 **Free Daily Spin!**" if is_free else f"💸 Used **{cost} coins** for an extra spin."
+    is_jackpot = "JACKPOT" in label
+    embed = discord.Embed(
+        title="🎰 Glyte Lucky Wheel 🎡",
+        color=0xEB459E if is_jackpot else 0xFEE75C,
+        description=f"{fee_text}\n\n"
+                    f"The wheel spins...\n"
+                    f"**[ 🎡 ✦ ✦ ✦ 🎡 ]**\n\n"
+                    f"🎯 **Outcome:**\n# {label}\n\n"
+                    f"💰 New Balance: **{u['coins']}** 🪙\n"
+                    f"✨ Total XP: **{u['xp']}**"
+    )
+    if new_badge:
+        embed.add_field(name="🏅 New Badge Unlocked!", value=f"`{p_badge}`", inline=False)
+    embed.set_footer(text="1 free spin every day · Extra spins 25 coins")
+    await interaction.followup.send(embed=embed)
 
 
 # ---- web dashboard (magic links + JSON API) ----
