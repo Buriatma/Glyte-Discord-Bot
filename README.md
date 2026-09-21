@@ -108,6 +108,8 @@
 | 🎯 `/bounty_list` | Open bounties |
 | 🤝 `/bounty_claim <id>` | Claim a bounty task (generates 1-click payout card) |
 | 📊 `/dashboard [hours]` | Your personal magic link — auto-logged-in as you ✨ |
+| 📖 `/help [category]` | Interactive category guide with animated Discord UI select dropdowns 📚 |
+| 🏓 `/ping` | Health check returning bot WebSocket latency & Atlas database status |
 | 💌 `/feedback <text>` | Teach the bot — it learns from this 🧠 |
 | 💜 `/about` | Who made this bot — GlyteTech 🏢 |
 
@@ -118,6 +120,7 @@
 
 | Command | Does what 🎯 |
 |---|---|
+| ⚡ `/sync` | **Instant command tree sync** — forces Discord to refresh all slash commands immediately (fixes "outdated" error) |
 | 📊 `/dashboard [hours]` | Fresh magic-link dashboard (random URL, 24h default) |
 | 🧠 `/insights` | Team health + quest auto-tunes + suggestions |
 | 🌙 `/eod` | Post today's EOD summary now |
