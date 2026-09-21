@@ -65,11 +65,23 @@ if (os.getenv("INTENTS_MESSAGE_CONTENT") or "false").lower() in ("true", "1", "y
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+try:
+    import certifi
+    ca_file = certifi.where()
+except ImportError:
+    ca_file = None
+
+mongo_kwargs = {
+    "serverSelectionTimeoutMS": 8000,
+    "connectTimeoutMS": 8000,
+    "socketTimeoutMS": 20000,
+}
+if ca_file and ("mongodb+srv://" in MONGO_URI or "ssl=true" in MONGO_URI.lower() or "tls=true" in MONGO_URI.lower()):
+    mongo_kwargs["tlsCAFile"] = ca_file
+
 mongo = motor.motor_asyncio.AsyncIOMotorClient(
     MONGO_URI,
-    serverSelectionTimeoutMS=8000,  # fail fast, never hang a command 30s
-    connectTimeoutMS=8000,
-    socketTimeoutMS=20000,
+    **mongo_kwargs
 )
 db = mongo[MONGO_DB]
 users_col = db["users"]
@@ -81,6 +93,7 @@ dash_tokens_col = db["dashboard_tokens"]
 dash_access_col = db["dashboard_access"]
 stats_col = db["daily_stats"]
 feedback_col = db["feedback"]
+strikes_col = db["strikes"]
 
 DEFAULT_USER = {
     "messages": 0,
@@ -103,6 +116,8 @@ DEFAULT_USER = {
     "daily": {},
     "last_spin": None,
     "focus_minutes": 0,
+    "boost_xp_until": 0,
+    "birthday": None,
 }
 
 QUESTS = {
@@ -111,16 +126,20 @@ QUESTS = {
     "chatter": {"name": "💬 Chatter", "target": 20, "xp": 30, "coins": 50,
                 "desc": "Send 20 messages today"},
     "voicer": {"name": "🎙️ Voicer", "target": 1800, "xp": 40, "coins": 60,
-               "desc": "Spend 30 min in voice today"},
+                "desc": "Spend 30 min in voice today"},
     "reactor": {"name": "⭐ Reactor", "target": 5, "xp": 20, "coins": 30,
                 "desc": "Add 5 reactions today"},
 }
 
 SHOP_DEFAULT = [
-    {"id": "coffee", "name": "☕ Coffee Break", "cost": 200, "desc": "Redeem a coffee on the team"},
-    {"id": "wfh", "name": "🏠 WFH Half-day", "cost": 1000, "desc": "Needs manager approval in real life!"},
-    {"id": "earlylog", "name": "🚀 Early Logout", "cost": 500, "desc": "Leave 1h early (manager approval needed)"},
-    {"id": "mvp", "name": "🏅 MVP Nomination", "cost": 800, "desc": "Nominate yourself for monthly MVP"},
+    {"id": "freeze", "name": "🧊 Streak Freeze", "cost": 300, "emoji": "🧊", "desc": "Protects your checkin streak if you miss a day!"},
+    {"id": "xp2x", "name": "⚡ 2x XP Booster (2h)", "cost": 250, "emoji": "⚡", "desc": "Double XP on chat, voice & focus for 2 hours"},
+    {"id": "spinticket", "name": "🎟️ Lucky Spin Ticket", "cost": 100, "emoji": "🎟️", "desc": "Grants an extra free spin on the Lucky Wheel"},
+    {"id": "vip", "name": "👑 VIP Prestige Role", "cost": 1000, "emoji": "👑", "desc": "Instant VIP Member role with golden name styling"},
+    {"id": "coffee", "name": "☕ Coffee Break", "cost": 200, "emoji": "☕", "desc": "Redeem a coffee on the team"},
+    {"id": "earlylog", "name": "🚀 Early Logout", "cost": 500, "emoji": "🚀", "desc": "Leave 1h early (manager approval needed)"},
+    {"id": "wfh", "name": "🏠 WFH Half-day", "cost": 1000, "emoji": "🏠", "desc": "Convert a half-day into remote work"},
+    {"id": "mvp", "name": "🏅 MVP Nomination", "cost": 800, "emoji": "🏅", "desc": "Nominate yourself or a peer for monthly MVP"},
 ]
 
 STREAK_BONUS = {7: 100, 14: 200, 30: 500, 60: 1200, 100: 3000}
@@ -388,6 +407,35 @@ async def scheduler():
             changed = True
             for a in await tune_quests(cfg):
                 blog(f"🧠 tuned {a['quest']}: {a['old']}→{a['new']} (rate {a['rate']})")
+        if cfg.get("last_birthday_check") != today:
+            cfg["last_birthday_check"] = today
+            changed = True
+            mm_dd = now.strftime("%m-%d")
+            async for doc in users_col.find({"birthday": mm_dd}):
+                uid = doc["_id"]
+                b_user = await get_user(uid)
+                b_user["coins"] += 150
+                b_user["xp"] += 100
+                mark_dirty(uid)
+                announce_ch = None
+                if SUMMARY_CHANNEL_ID:
+                    announce_ch = bot.get_channel(SUMMARY_CHANNEL_ID)
+                if not announce_ch:
+                    for g in bot.guilds:
+                        if g.get_member(int(uid)):
+                            announce_ch = g.system_channel or (g.text_channels[0] if g.text_channels else None)
+                            break
+                if announce_ch:
+                    try:
+                        embed = discord.Embed(
+                            title="🎂 Happy Birthday! 🎉",
+                            description=f"Today is a special celebration! Happy Birthday to <@{uid}>! 🥳✨\n\n"
+                                        f"🎁 Birthday gift: **+150 🪙 coins** and **+100 XP**!",
+                            color=0xFEE75C
+                        )
+                        await announce_ch.send(content=f"🎉 <@{uid}>", embed=embed)
+                    except Exception as e:
+                        blog(f"birthday announce failed: {e}")
         try:
             cutoff = (now - timedelta(days=30)).isoformat()
             await dash_access_col.delete_many({"at": {"$lt": cutoff}})
@@ -632,6 +680,48 @@ async def ping(interaction: discord.Interaction):
 
 
 @bot.event
+async def on_member_join(member: discord.Member):
+    if member.bot:
+        return
+    # Starter bonus coins
+    u = await get_user(member.id)
+    u["coins"] += 50
+    mark_dirty(member.id)
+    track("events", "member_join")
+
+    ch = member.guild.system_channel
+    if not ch or not ch.permissions_for(member.guild.me).send_messages:
+        for c in member.guild.text_channels:
+            if any(k in c.name.lower() for k in ["welcome", "general", "lounge", "chat"]):
+                if c.permissions_for(member.guild.me).send_messages:
+                    ch = c
+                    break
+    if ch:
+        embed = discord.Embed(
+            title=f"🎉 Welcome to {member.guild.name}, {member.display_name}!",
+            description=(
+                f"Hey {member.mention}, welcome to the server! ✨\n\n"
+                f"🎁 **Starter Gift:** We've credited **+50 🪙 coins** to your account!\n\n"
+                f"**Quick Start:**\n"
+                f"• `/checkin` — Check in daily to build your streak 🔥 & earn XP\n"
+                f"• `/quests` — Complete daily quests for extra rewards 🗺️\n"
+                f"• `/spin` — Spin the Lucky Wheel daily 🎡\n"
+                f"• `/shop` — Spend your coins on perks, boosters & VIP 🏪\n"
+                f"• `/birthday set` — Set your birthday for birthday bonuses 🎂\n"
+                f"• `/dashboard` — Open your personal live web hub 📊"
+            ),
+            color=0x5865F2
+        )
+        if member.display_avatar:
+            embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text=f"Member #{member.guild.member_count} • Have a blast! 🚀")
+        try:
+            await ch.send(content=member.mention, embed=embed)
+        except Exception as e:
+            blog(f"Welcome message failed: {e}")
+
+
+@bot.event
 async def on_message(message: discord.Message):
     if message.author.bot or not message.guild:
         return
@@ -647,9 +737,10 @@ async def on_message(message: discord.Message):
     if now - last >= MSG_COOLDOWN_S:
         _last_msg_ts[uid] = now
         old_lvl = calc_level(u["xp"])
-        u["xp"] += XP_PER_MSG
+        xp_gain = XP_PER_MSG * 2 if u.get("boost_xp_until", 0) > now else XP_PER_MSG
+        u["xp"] += xp_gain
         u["coins"] += 2  # trickle coins for chat
-        bump_season(u, xp=XP_PER_MSG)
+        bump_season(u, xp=xp_gain)
         if calc_level(u["xp"]) > old_lvl:
             gained_level = calc_level(u["xp"])
     mark_dirty(uid)
@@ -696,10 +787,16 @@ async def on_voice_state_update(member, before, after):
             if delta > 0:
                 u = await get_user(uid)
                 day = today_str()
+                ch_name = getattr(before.channel, "name", "").lower()
+                is_focus_room = any(w in ch_name for w in ("focus", "study", "deep", "lounge"))
+                mult = 1.5 if is_focus_room else 1.0
+                if u.get("boost_xp_until", 0) > now:
+                    mult *= 2.0
+                xp_gain = int((delta // 60) * mult)
                 u["voice_seconds"] += delta
-                u["xp"] += delta // 60
+                u["xp"] += xp_gain
                 u["coins"] += delta // 300  # 1 coin per 5 voice-min
-                bump_season(u, xp=delta // 60, voice=delta)
+                bump_season(u, xp=xp_gain, voice=delta)
                 u["daily"].setdefault(day, {"messages": 0, "voice": 0, "reactions": 0})["voice"] += delta
                 if day not in u["voice_days"]:
                     u["voice_days"].append(day)
@@ -718,7 +815,20 @@ async def checkin(interaction: discord.Interaction):
         await interaction.followup.send(
             f"✅ Already checked in today! Streak: **{u['streak']}** 🔥", ephemeral=True)
         return
-    u["streak"] = u["streak"] + 1 if u["last_checkin"] == yesterday_str() else 1
+    used_freeze = False
+    if u.get("last_checkin") == yesterday_str():
+        u["streak"] = u.get("streak", 0) + 1
+    else:
+        # Check if user has a Streak Freeze in inventory
+        inv = u.get("inventory", [])
+        freeze_idx = next((i for i, it in enumerate(inv) if it.get("id") == "freeze"), None)
+        if freeze_idx is not None and u.get("streak", 0) >= 2:
+            inv.pop(freeze_idx)
+            used_freeze = True
+            u["streak"] = u.get("streak", 0) + 1
+        else:
+            u["streak"] = 1
+
     u["last_checkin"] = today
     u["checkins"].append(today)
 
@@ -740,6 +850,8 @@ async def checkin(interaction: discord.Interaction):
         await apply_level_roles(interaction.user, new_lvl)
     msg = (f"✅ {interaction.user.mention} checked in for **{today}**! 🔥 Streak **{u['streak']}** "
            f"(+20 XP, +25 coins)")
+    if used_freeze:
+        msg += " 🧊 **Streak Freeze Activated!** Your streak was protected from resetting! 🔥"
     if bonus:
         msg += f" 🎁 Streak bonus +{bonus} coins!"
     if new_lvl > old_lvl:
@@ -889,37 +1001,211 @@ async def quest_claim(interaction: discord.Interaction, quest_id: str):
         f"🎉 Quest **{q['name']}** claimed! +{q['xp']} XP, +{q['coins']} 🪙")
 
 
-@bot.tree.command(name="shop", description="Show the rewards shop")
+async def execute_purchase(interaction: discord.Interaction, item_id: str) -> tuple[bool, str]:
+    cfg = await get_config()
+    items = {it["id"]: it for it in cfg.get("shop", SHOP_DEFAULT)}
+    item = items.get(item_id.lower().strip())
+    if not item:
+        return False, "❌ Unknown item. Check `/shop`."
+    u = await get_user(interaction.user.id)
+    if u["coins"] < item["cost"]:
+        return False, f"❌ You need **{item['cost']} 🪙**, but you have **{u['coins']} 🪙**."
+
+    u["coins"] -= item["cost"]
+    u["inventory"].append({"id": item["id"], "name": item["name"], "at": today_str()})
+
+    extra_msg = ""
+    # Special perk handling: VIP Role
+    if item["id"] == "vip" and interaction.guild:
+        vip_role = discord.utils.get(interaction.guild.roles, name="VIP Member 💎")
+        if not vip_role:
+            try:
+                vip_role = await interaction.guild.create_role(
+                    name="VIP Member 💎",
+                    color=discord.Color.gold(),
+                    hoist=True,
+                    reason="Glyte Bot VIP Shop Item"
+                )
+            except Exception as e:
+                blog(f"Failed to create VIP role: {e}")
+        if vip_role and isinstance(interaction.user, discord.Member):
+            try:
+                await interaction.user.add_roles(vip_role, reason="Purchased VIP in /shop")
+                extra_msg = "\n👑 **VIP Member 💎** role granted with golden styling!"
+            except Exception as e:
+                extra_msg = f"\n⚠️ Note: Bot could not assign role (check bot role permissions): {e}"
+
+    mark_dirty(interaction.user.id)
+    track("shop_buy", item["id"])
+    track("commands", "buy")
+    return True, f"🛍️ {interaction.user.mention} bought **{item['name']}** for **{item['cost']} 🪙**! Balance: **{u['coins']} 🪙**{extra_msg}"
+
+
+class ShopSelect(discord.ui.Select):
+    def __init__(self, items: list, user_id: int):
+        self.user_id = user_id
+        options = []
+        for it in items[:25]:
+            emoji = it.get("emoji")
+            options.append(discord.SelectOption(
+                label=f"{it['name']} ({it['cost']} 🪙)",
+                value=it["id"],
+                description=it.get("desc", "")[:100],
+                emoji=emoji if emoji and len(emoji) <= 4 else None
+            ))
+        super().__init__(placeholder="🛒 Select an item to purchase...", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ This shop dropdown is for the person who ran `/shop`. Run your own `/shop`!", ephemeral=True)
+            return
+        item_id = self.values[0]
+        success, msg = await execute_purchase(interaction, item_id)
+        if success:
+            await interaction.response.send_message(msg)
+        else:
+            await interaction.response.send_message(msg, ephemeral=True)
+
+
+class ShopView(discord.ui.View):
+    def __init__(self, items: list, user_id: int):
+        super().__init__(timeout=180)
+        self.add_item(ShopSelect(items, user_id))
+
+
+@bot.tree.command(name="shop", description="Browse and purchase rewards, perks & boosters")
 async def shop(interaction: discord.Interaction):
     await interaction.response.defer()
     cfg = await get_config()
     items = cfg.get("shop", SHOP_DEFAULT)
     u = await get_user(interaction.user.id)
-    lines = [f"`{it['id']}` **{it['name']}** — {it['cost']} 🪙\n_{it['desc']}_" for it in items]
-    await interaction.followup.send(embed=discord.Embed(
-        title=f"🏪 Shop (balance: {u['coins']} 🪙)",
-        description="\n\n".join(lines), color=0xEB459E))
+
+    embed = discord.Embed(
+        title="🏪 Glyte Rewards & Perks Shop",
+        description=f"Welcome, {interaction.user.mention}! Your balance: **{u['coins']} 🪙**\n"
+                    f"Choose an item from the dropdown below or run `/buy <item_id>`.\n",
+        color=0xEB459E
+    )
+    for it in items:
+        embed.add_field(
+            name=f"{it.get('emoji', '🎁')} {it['name']} — `{it['cost']} 🪙`",
+            value=f"{it['desc']}\n*ID:* `{it['id']}`",
+            inline=False
+        )
+    embed.set_footer(text="💡 Tip: Items like 2x XP Booster & Spin Tickets can be used with /use <item_id>!")
+    view = ShopView(items, interaction.user.id)
+    await interaction.followup.send(embed=embed, view=view)
 
 
 @bot.tree.command(name="buy", description="Buy an item from the shop with coins")
-@app_commands.describe(item_id="Item id from /shop")
+@app_commands.describe(item_id="Item id from /shop (e.g. freeze, xp2x, spinticket, vip)")
 async def buy(interaction: discord.Interaction, item_id: str):
-    cfg = await get_config()
-    items = {it["id"]: it for it in cfg.get("shop", SHOP_DEFAULT)}
-    item = items.get(item_id.lower().strip())
-    if not item:
-        await interaction.response.send_message("❌ Unknown item. See /shop.", ephemeral=True)
-        return
+    await interaction.response.defer()
+    success, msg = await execute_purchase(interaction, item_id)
+    if success:
+        await interaction.followup.send(msg)
+    else:
+        await interaction.followup.send(msg, ephemeral=True)
+
+
+@bot.tree.command(name="use", description="Use/activate an item from your inventory (e.g. xp2x, spinticket)")
+@app_commands.describe(item_id="ID of the item in your inventory to consume")
+async def use_item(interaction: discord.Interaction, item_id: str):
+    await interaction.response.defer()
+    item_id = item_id.lower().strip()
     u = await get_user(interaction.user.id)
-    if u["coins"] < item["cost"]:
-        await interaction.response.send_message(
-            f"❌ Need {item['cost']} 🪙, you have {u['coins']}.", ephemeral=True)
+    inv = u.get("inventory", [])
+
+    idx = next((i for i, it in enumerate(inv) if it.get("id") == item_id), None)
+    if idx is None:
+        await interaction.followup.send(
+            f"❌ You don't have `{item_id}` in your inventory. Check `/inventory` or visit `/shop`!",
+            ephemeral=True
+        )
         return
-    u["coins"] -= item["cost"]
-    u["inventory"].append({"id": item["id"], "name": item["name"], "at": today_str()})
-    mark_dirty(interaction.user.id)
-    await interaction.response.send_message(
-        f"🛍️ {interaction.user.mention} bought **{item['name']}**! Balance: {u['coins']} 🪙")
+
+    if item_id == "freeze":
+        await interaction.followup.send(
+            "🧊 **Streak Freeze is passive!** Keep it safely in your inventory — if you miss a daily `/checkin`, it will automatically consume itself to save your streak! 🔥",
+            ephemeral=True
+        )
+        return
+
+    used = inv.pop(idx)
+    now_ts = time.time()
+
+    if item_id == "xp2x":
+        current_boost = max(now_ts, u.get("boost_xp_until", 0))
+        u["boost_xp_until"] = current_boost + 7200  # 2 hours
+        mark_dirty(interaction.user.id)
+        rem_mins = int((u["boost_xp_until"] - now_ts) // 60)
+        await interaction.followup.send(
+            f"⚡ {interaction.user.mention} activated **2x XP Booster**! Double XP active on messages & voice for the next **{rem_mins} minutes**!"
+        )
+    elif item_id == "spinticket":
+        u["last_spin"] = None
+        mark_dirty(interaction.user.id)
+        await interaction.followup.send(
+            f"🎟️ {interaction.user.mention} used a **Lucky Spin Ticket**! Your spin cooldown is reset. Run `/spin` now! 🎰"
+        )
+    elif item_id in ("coffee", "earlylog", "wfh", "mvp"):
+        mark_dirty(interaction.user.id)
+        ticket_no = hex(int(now_ts))[2:].upper()
+        await interaction.followup.send(
+            f"🎉 {interaction.user.mention} redeemed **{used['name']}** (Ticket: `#{ticket_no}`)!\n"
+            f"Please notify your manager for fulfillment."
+        )
+    else:
+        mark_dirty(interaction.user.id)
+        await interaction.followup.send(
+            f"✨ {interaction.user.mention} used **{used['name']}**!"
+        )
+
+
+@bot.tree.command(name="shop_add", description="[Admin] Add or update a shop item")
+@app_commands.describe(
+    item_id="Unique identifier (e.g. pizza)",
+    name="Item name (e.g. 🍕 Free Pizza)",
+    cost="Cost in coins",
+    desc="Item description"
+)
+async def shop_add(interaction: discord.Interaction, item_id: str, name: str, cost: int, desc: str):
+    if not interaction.user.guild_permissions.manage_guild:
+        await interaction.response.send_message("❌ Manage Server required.", ephemeral=True)
+        return
+    await interaction.response.defer(ephemeral=True)
+    cfg = await get_config()
+    items = cfg.get("shop", list(SHOP_DEFAULT))
+    item_id = item_id.lower().strip()
+    idx = next((i for i, it in enumerate(items) if it["id"] == item_id), None)
+    entry = {"id": item_id, "name": name, "cost": max(1, cost), "desc": desc, "emoji": name.split()[0] if name else "🎁"}
+    if idx is not None:
+        items[idx] = entry
+    else:
+        items.append(entry)
+    cfg["shop"] = items
+    await save_config(cfg)
+    await interaction.followup.send(f"✅ Item `{item_id}` ({name}) added/updated in `/shop` for {cost} 🪙!", ephemeral=True)
+
+
+@bot.tree.command(name="shop_remove", description="[Admin] Remove an item from the shop")
+@app_commands.describe(item_id="ID of the item to remove")
+async def shop_remove(interaction: discord.Interaction, item_id: str):
+    if not interaction.user.guild_permissions.manage_guild:
+        await interaction.response.send_message("❌ Manage Server required.", ephemeral=True)
+        return
+    await interaction.response.defer(ephemeral=True)
+    cfg = await get_config()
+    items = cfg.get("shop", list(SHOP_DEFAULT))
+    item_id = item_id.lower().strip()
+    new_items = [it for it in items if it["id"] != item_id]
+    if len(new_items) == len(items):
+        await interaction.followup.send(f"❌ Item `{item_id}` not found in shop.", ephemeral=True)
+        return
+    cfg["shop"] = new_items
+    await save_config(cfg)
+    await interaction.followup.send(f"✅ Item `{item_id}` removed from `/shop`!", ephemeral=True)
+
 
 
 @bot.tree.command(name="inventory", description="Show your owned items")
@@ -2388,6 +2674,214 @@ async def about(interaction: discord.Interaction):
         name="🏢 Made by",
         value="**GlyteTech** 💜\n🌐 www.glyte.tech\n📧 info@glyte.tech",
         inline=False))
+
+
+birthday_group = app_commands.Group(name="birthday", description="Birthday tracker & celebrations 🎂")
+
+
+@birthday_group.command(name="set", description="Set your birthday to receive server celebrations & gifts!")
+@app_commands.describe(month="Month of birth (1-12)", day="Day of birth (1-31)")
+async def birthday_set(interaction: discord.Interaction, month: int, day: int):
+    if not (1 <= month <= 12 and 1 <= day <= 31):
+        await interaction.response.send_message("❌ Invalid date. Month must be 1–12 and Day 1–31.", ephemeral=True)
+        return
+    bday_str = f"{month:02d}-{day:02d}"
+    u = await get_user(interaction.user.id)
+    u["birthday"] = bday_str
+    mark_dirty(interaction.user.id)
+    track("commands", "birthday_set")
+    await interaction.response.send_message(
+        f"🎂 Your birthday has been set to **{bday_str}** (MM-DD)! We'll celebrate you when the day arrives! 🎉",
+        ephemeral=True
+    )
+
+
+@birthday_group.command(name="list", description="List upcoming server birthdays")
+async def birthday_list(interaction: discord.Interaction):
+    await interaction.response.defer()
+    docs = [doc async for doc in users_col.find({"birthday": {"$ne": None}})]
+    if not docs:
+        await interaction.followup.send("🎂 No birthdays registered yet! Set yours with `/birthday set`.")
+        return
+    now_mm_dd = datetime.now(timezone.utc).strftime("%m-%d")
+    upcoming = sorted([u for u in docs if u.get("birthday") and u["birthday"] >= now_mm_dd], key=lambda x: x["birthday"])
+    passed = sorted([u for u in docs if u.get("birthday") and u["birthday"] < now_mm_dd], key=lambda x: x["birthday"])
+    ordered = upcoming + passed
+    lines = [f"• **{doc.get('birthday')}** — <@{doc['_id']}>" for doc in ordered[:25]]
+    embed = discord.Embed(
+        title="🎂 Upcoming Server Birthdays",
+        description="\n".join(lines) or "No birthdays found.",
+        color=0xEB459E
+    )
+    embed.set_footer(text="Set your birthday anytime with /birthday set <month> <day>")
+    await interaction.followup.send(embed=embed)
+
+
+bot.tree.add_command(birthday_group)
+
+
+strike_group = app_commands.Group(name="strike", description="Moderation strikes & warnings 🛡️")
+
+
+@strike_group.command(name="add", description="[Mod] Issue a strike to a member (3 strikes = 1h auto-timeout)")
+@app_commands.describe(member="Member to strike", reason="Reason for the strike")
+async def strike_add(interaction: discord.Interaction, member: discord.Member, reason: str):
+    if not interaction.user.guild_permissions.manage_messages:
+        await interaction.response.send_message("❌ Manage Messages permission required.", ephemeral=True)
+        return
+    if member.bot:
+        await interaction.response.send_message("❌ Cannot strike a bot.", ephemeral=True)
+        return
+    if member.top_role >= interaction.user.top_role and interaction.user.id != interaction.guild.owner_id:
+        await interaction.response.send_message("❌ Cannot strike a member with equal or higher role.", ephemeral=True)
+        return
+
+    await interaction.response.defer()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    await strikes_col.insert_one({
+        "user_id": str(member.id),
+        "guild_id": str(interaction.guild.id),
+        "reason": reason,
+        "mod_id": str(interaction.user.id),
+        "at": now_iso
+    })
+    track("moderation", "strike_add")
+
+    total = await strikes_col.count_documents({"user_id": str(member.id), "guild_id": str(interaction.guild.id)})
+    extra = ""
+    if total >= 3:
+        try:
+            await member.timeout(timedelta(hours=1), reason=f"Accumulated {total} strikes. Latest: {reason}")
+            extra = "\n⚠️ **Threshold Reached!** Applied an automatic **1-hour timeout** ⏳"
+        except Exception as e:
+            extra = f"\n⚠️ Auto-timeout could not be applied: {e}"
+
+    embed = discord.Embed(
+        title=f"🛡️ Strike #{total} Issued",
+        description=f"**User:** {member.mention}\n"
+                    f"**Reason:** {reason}\n"
+                    f"**Moderator:** {interaction.user.mention}\n"
+                    f"**Total Strikes:** `{total}`{extra}",
+        color=0xED4245
+    )
+    await interaction.followup.send(embed=embed)
+
+
+@strike_group.command(name="list", description="[Mod] View strikes for a member")
+@app_commands.describe(member="Member to view strikes for")
+async def strike_list(interaction: discord.Interaction, member: discord.Member):
+    if not interaction.user.guild_permissions.manage_messages:
+        await interaction.response.send_message("❌ Manage Messages permission required.", ephemeral=True)
+        return
+    await interaction.response.defer(ephemeral=True)
+    strikes = [s async for s in strikes_col.find({"user_id": str(member.id), "guild_id": str(interaction.guild.id)}).sort("at", -1)]
+    if not strikes:
+        await interaction.followup.send(f"✅ {member.mention} has a clean record (0 strikes).", ephemeral=True)
+        return
+    lines = [f"• `{s['at'][:10]}` — **{s['reason']}** (by <@{s['mod_id']}>)" for s in strikes[:20]]
+    embed = discord.Embed(
+        title=f"🛡️ Strikes for {member.display_name} ({len(strikes)} total)",
+        description="\n".join(lines),
+        color=0xED4245
+    )
+    await interaction.followup.send(embed=embed, ephemeral=True)
+
+
+@strike_group.command(name="clear", description="[Mod] Clear all strikes for a member")
+@app_commands.describe(member="Member to clear strikes for")
+async def strike_clear(interaction: discord.Interaction, member: discord.Member):
+    if not interaction.user.guild_permissions.manage_messages:
+        await interaction.response.send_message("❌ Manage Messages permission required.", ephemeral=True)
+        return
+    await interaction.response.defer(ephemeral=True)
+    res = await strikes_col.delete_many({"user_id": str(member.id), "guild_id": str(interaction.guild.id)})
+    await interaction.followup.send(f"✅ Cleared **{res.deleted_count}** strikes for {member.mention}!", ephemeral=True)
+
+
+bot.tree.add_command(strike_group)
+
+
+@bot.tree.command(name="slowmode", description="[Mod] Set text channel slowmode delay")
+@app_commands.describe(seconds="Slowmode in seconds (0 to turn off, max 21600)", channel="Channel (default: current)")
+async def slowmode(interaction: discord.Interaction, seconds: int, channel: Optional[discord.TextChannel] = None):
+    if not interaction.user.guild_permissions.manage_channels:
+        await interaction.response.send_message("❌ Manage Channels permission required.", ephemeral=True)
+        return
+    ch = channel or interaction.channel
+    if not isinstance(ch, discord.TextChannel):
+        await interaction.response.send_message("❌ Slowmode can only be applied to text channels.", ephemeral=True)
+        return
+    seconds = max(0, min(seconds, 21600))
+    try:
+        await ch.edit(slowmode_delay=seconds)
+        status = f"set to **{seconds}s**" if seconds > 0 else "disabled"
+        await interaction.response.send_message(f"⏱️ Slowmode {status} in {ch.mention}!")
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Failed to set slowmode: {e}", ephemeral=True)
+
+
+async def _schedule_reminder(delay_seconds: float, user_id: int, channel_id: int, note: str):
+    if delay_seconds > 0:
+        await asyncio.sleep(delay_seconds)
+    embed = discord.Embed(
+        title="⏰ Reminder!",
+        description=f"Hey <@{user_id}>, here is your scheduled reminder:\n\n> **{note}**",
+        color=0xFEE75C
+    )
+    ch = bot.get_channel(channel_id)
+    delivered = False
+    if ch:
+        try:
+            await ch.send(content=f"<@{user_id}>", embed=embed)
+            delivered = True
+        except Exception:
+            pass
+    if not delivered:
+        try:
+            u = bot.get_user(user_id) or await bot.fetch_user(user_id)
+            if u:
+                await u.send(embed=embed)
+        except Exception:
+            pass
+
+
+@bot.tree.command(name="remindme", description="Set a timer reminder (e.g. 10m, 60m)")
+@app_commands.describe(minutes="Minutes until reminder (1 to 10080)", message="Reminder note")
+async def remindme(interaction: discord.Interaction, minutes: int, message: str):
+    if minutes < 1 or minutes > 10080:
+        await interaction.response.send_message("❌ Minutes must be between 1 and 10080 (up to 7 days).", ephemeral=True)
+        return
+    track("commands", "remindme")
+    remind_time = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    ts = int(remind_time.timestamp())
+    asyncio.create_task(_schedule_reminder(minutes * 60, interaction.user.id, interaction.channel_id, message))
+    await interaction.response.send_message(
+        f"⏰ **Reminder set!** I'll remind you in **{minutes} minutes** (<t:{ts}:R>):\n> {message}"
+    )
+
+
+@bot.tree.command(name="focus_rooms", description="List voice lounges giving 1.5x Focus bonus XP")
+async def focus_rooms(interaction: discord.Interaction):
+    if not interaction.guild:
+        await interaction.response.send_message("Run this inside a server.", ephemeral=True)
+        return
+    found = []
+    for vc in interaction.guild.voice_channels:
+        name_lower = vc.name.lower()
+        if any(k in name_lower for k in ("focus", "pomodoro", "study", "lounge", "deep work")):
+            found.append(f"• 🎙️ {vc.mention} (`{len(vc.members)}` active)")
+
+    desc = "\n".join(found) if found else "No active focus rooms found! Any voice channel with `focus`, `pomodoro`, `study`, or `lounge` in its name automatically grants the bonus!"
+    embed = discord.Embed(
+        title="🎧 Focus Voice Lounges (1.5x Bonus XP)",
+        description=(
+            "Studying or working in designated focus lounges earns **1.5x bonus XP** per minute!\n\n"
+            f"{desc}\n\n"
+            "💡 Combine with `/focus` pomodoro timer or a `2x XP Booster` from `/shop` for fast leveling!"
+        ),
+        color=0x57F287
+    )
+    await interaction.response.send_message(embed=embed)
 
 
 if __name__ == "__main__":

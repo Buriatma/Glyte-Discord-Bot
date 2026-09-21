@@ -24,9 +24,10 @@
 | | | |
 |---|---|---|
 | 🗓️ **Flexible check-ins** — no fixed shifts, streaks 🔥 | 📊 **Auto activity tracking** — chat, voice, reactions | 🎮 **Full gamification** — XP, coins, quests, badges, shop |
-| 🌙 **EOD summaries** — present / absent / on-leave, auto-posted | 🧍 **Standups** — morning thread + compiled updates | 📈 **Weekly CSV reports** — attendance %, top contributors |
-| 🙌 **Kudos** — peer appreciation with coin tips | 🎯 **Bounty board** — paid team tasks | 🏁 **Monthly seasons** — fresh leaderboard + champion 👑 |
+| 🌙 **EOD summaries** — present / absent / on-leave | 🧍 **Standups** — morning thread + compiled updates | 📈 **Weekly CSV reports** — attendance %, top contributors |
+| 🙌 **Kudos** — peer appreciation with coin tips | 🎯 **Bounty board** — paid tasks + 1-click payouts | 🏁 **Monthly seasons** — fresh leaderboard + champion 👑 |
 | 🖥️ **Web dashboard** — `/dashboard` magic link = auto-login ✨ | 🙋 **Personal hub** — stats, quests, shop, leaves | 👑 **Admin room** — everything + 📜 logs + 🧠 insights |
+| 🎉 **Welcome & Birthdays** — +50 starter gift & celebration cards | 🛡️ **Moderation** — `/strike` with auto-timeout, `/slowmode` | ⏰ **Reminders & Focus** — `/remindme` timers, 1.5x voice XP lounges |
 
 ---
 
@@ -81,17 +82,22 @@
 
 | Command | Does what 🎯 |
 |---|---|
-| ✅ `/checkin` | Mark today's attendance, streak + rewards |
+| ✅ `/checkin` | Mark today's attendance, streak + rewards (auto-protected by Streak Freeze 🧊) |
 | 🎁 `/daily` | Claim daily coins |
 | 📊 `/mystats [@member]` | Level, XP, coins, activity, badges |
 | 🏆 `/leaderboard [category]` | Top members (xp / coins / messages / voice / check-ins) |
 | 🏁 `/season [month]` | Monthly season leaderboard + last champion |
 | 🗺️ `/quests` | Today's quests + progress |
 | 🎉 `/quest_claim <id>` | Claim a finished quest |
-| 🏪 `/shop` | Browse the rewards shop |
-| 🛍️ `/buy <item>` | Buy with coins |
+| 🏪 `/shop` | Interactive rewards & booster shop with 1-click dropdown 🛒 |
+| 🛍️ `/buy <item>` | Buy items, boosters or VIP status with coins |
+| ⚡ `/use <item>` | Activate consumables (2x XP Booster, Spin Ticket, redeem perks) |
 | 🎒 `/inventory` | Your owned items |
 | 🏅 `/badges [@member]` | Badge showcase |
+| 🎂 `/birthday set <month> <day>` | Set your birthday for server celebrations & gift coins/XP 🎁 |
+| 🎂 `/birthday list` | View upcoming server birthdays |
+| ⏰ `/remindme <minutes> <note>` | Smart timer reminder with DM fallback ⏱️ |
+| 🎧 `/focus_rooms` | List voice lounges with **1.5x bonus XP** per minute |
 | 🗓️ `/attendance [@member] [days]` | Presence history (default 7d, max 30d) |
 | 🌴 `/leave_apply [days] [reason]` | Apply for leave (interactive popup modal + 1-click manager buttons) |
 | 📝 `/my_leaves` | Your leave requests |
@@ -119,6 +125,12 @@
 | 📈 `/report [days]` | CSV report + summary (default 7d) |
 | 🌴 `/leave_list` | Pending leaves |
 | ✅❌ `/leave_decide <id> <approve>` | Approve / reject leave |
+| 🛡️ `/strike add <member> <reason>` | Issue moderation strike (3 strikes = auto 1h timeout ⏳) |
+| 🛡️ `/strike list <member>` | View strike history for a member |
+| 🛡️ `/strike clear <member>` | Clear all strikes for a member |
+| ⏱️ `/slowmode <seconds> [channel]` | Fast channel slowmode adjustment |
+| 🏪 `/shop_add <id> <name> <cost> <desc>` | Add / update custom shop item |
+| 🏪 `/shop_remove <id>` | Remove item from shop |
 | 🎖️ `/reward_add <level> <role>` | Auto-role on level-up |
 | 🎖️ `/reward_list` | Level-role mapping |
 | 🪙 `/give_coins <member> <amount>` | Grant coins |
@@ -152,16 +164,20 @@ flowchart LR
 | 🎯 Bounty | — | as posted 💰 |
 | 📶 Level up | every 150 XP | — |
 
-## 🏪🛍️ Default shop
+## 🏪🛍️ Default shop & boosters
 
-| ID | Item | Cost |
-|---|---|---|
-| `coffee` | ☕ Coffee Break | 200 🪙 |
-| `earlylog` | 🚀 Early Logout (needs manager OK) | 500 🪙 |
-| `mvp` | 🏅 MVP Nomination | 800 🪙 |
-| `wfh` | 🏠 WFH Half-day (needs manager OK) | 1000 🪙 |
+| ID | Item | Cost | Type | Perk |
+|---|---|---|---|---|
+| `freeze` | 🧊 Streak Freeze | 300 🪙 | Passive | Protects your check-in streak if you miss a day |
+| `xp2x` | ⚡ 2x XP Booster (2h) | 250 🪙 | Consumable | Double XP on chat & voice for 2 hours (`/use xp2x`) |
+| `spinticket` | 🎟️ Lucky Spin Ticket | 100 🪙 | Consumable | Reset `/spin` cooldown for an extra spin (`/use spinticket`) |
+| `vip` | 👑 VIP Prestige Role | 1000 🪙 | Role Perk | Instant golden VIP Member 💎 role in the server |
+| `coffee` | ☕ Coffee Break | 200 🪙 | Voucher | Redeem a coffee on the team |
+| `earlylog` | 🚀 Early Logout | 500 🪙 | Voucher | Leave 1h early (needs manager OK) |
+| `mvp` | 🏅 MVP Nomination | 800 🪙 | Voucher | Nominate yourself or a peer for monthly MVP |
+| `wfh` | 🏠 WFH Half-day | 1000 🪙 | Voucher | Convert a half-day into remote work |
 
-> 🗄️ Shop lives in Mongo (`config` collection) — edit perks without touching code. ✨
+> 🗄️ Shop lives in Mongo (`config` collection) — manage via `/shop_add` & `/shop_remove` without touching code! ✨
 
 ---
 
@@ -240,6 +256,8 @@ python bot.py
 | `STANDUP_TIME` | `10:00` | 🧍 Morning thread time (24h) |
 | `DASHBOARD_PORT` | `8080` | 📊 Dashboard port |
 | `DASHBOARD_PUBLIC_URL` | `http://localhost:8080` | 📊 Base URL used in `/dashboard` links |
+| `INTENTS_MEMBERS` | `false` | Enable Server Members privileged intent (for welcome cards) |
+| `INTENTS_MESSAGE_CONTENT` | `false` | Enable Message Content privileged intent |
 
 ## 🧠🔄 Self-improving engine (Hermes-style ✨)
 
@@ -282,17 +300,25 @@ Glyte-Discord-Bot/
 
 MIT — use it, fork it, flex it in your portfolio 💼✨. Just keep the copyright notice. See [LICENSE](LICENSE).
 
-## 🗺️🚀 Roadmap — coming next?
+## 🗺️🚀 Roadmap & Feature Status
 
-- 🎉 Birthdays, work anniversaries, welcome/onboarding flows
 - ✅ ~~Web dashboard v1~~ — shipped! 📊 (run `/dashboard`)
 - ✅ ~~Personal login + admin control room + logs~~ — shipped! 🙋👑📜
 - ✅ ~~Self-improving quests + insights~~ — shipped! 🧠 (see `/insights`)
-- 🛡️ Moderation helpers — strikes, slowmode, spam guard
-- ⏰ Smart reminders — check-in nudges, leave-decision pings
-- 🎤 Focus rooms — pomodoro voice lounges with bonus XP
+- ✅ ~~Interactive Leave & Bounty Buttons + Modals~~ — shipped! 🌴🎯
+- ✅ ~~Interactive Shop & Boosters~~ (Streak Freeze, 2x XP, VIP, Spin tickets) — shipped! 🏪⚡
+- ✅ ~~Lucky Wheel (`/spin`) & Pomodoro Focus Mode (`/focus`)~~ — shipped! 🎰🎯
+- ✅ ~~Birthdays, onboarding gifts & welcome flows~~ — shipped! 🎉🎂 (`/birthday set`, `/birthday list`)
+- ✅ ~~Moderation helpers~~ (strikes with auto-timeout, slowmode) — shipped! 🛡️ (`/strike`, `/slowmode`)
+- ✅ ~~Smart reminders~~ — shipped! ⏰ (`/remindme`)
+- ✅ ~~Focus rooms~~ (pomodoro voice lounges with 1.5x bonus XP) — shipped! 🎤 (`/focus_rooms`)
 
-PRs welcome — pick one and ship it! 🚢💨
+### 🔮 Future Ideas
+- 🤖 LLM-powered EOD highlights & standup summaries
+- 🌐 Multilingual support & localized timezones per user
+- 📈 Webhook integrations with Jira, GitHub & Linear
+
+PRs welcome — pick an idea and ship it! 🚢💨
 
 ## 💜 Credits
 
