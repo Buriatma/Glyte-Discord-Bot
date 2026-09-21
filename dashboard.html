@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🤖 Glyte Dashboard 📊</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0b0e14; --card:#151a26; --card2:#1b2233; --line:#2a3350;
+  --txt:#e8ecf5; --dim:#8b93b0; --acc:#5865F2; --acc2:#EB459E;
+  --good:#57F287; --bad:#ED4245; --gold:#FEE75C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+.blob{position:fixed;border-radius:50%;filter:blur(110px);opacity:.35;z-index:0;animation:drift 14s ease-in-out infinite alternate}
+.b1{width:420px;height:420px;background:#5865F2;top:-120px;left:-120px}
+.b2{width:380px;height:380px;background:#EB459E;bottom:-140px;right:-100px;animation-delay:-5s}
+.b3{width:260px;height:260px;background:#57F287;top:40%;left:60%;opacity:.18;animation-delay:-9s}
+@keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(60px,40px) scale(1.15)}}
+.flo{position:fixed;z-index:0;opacity:.5;animation:floaty 7s ease-in-out infinite;pointer-events:none;font-size:26px}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-26px) rotate(8deg)}}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:24px 16px 60px}
+header{text-align:center;padding:26px 10px;animation:drop .7s ease both}
+@keyframes drop{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:none}}
+h1{font-size:clamp(28px,5vw,46px);background:linear-gradient(90deg,#5865F2,#EB459E,#FEE75C,#57F287,#5865F2);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
+@keyframes shine{to{background-position:300% 0}}
+.sub{color:var(--dim);margin-top:6px}
+.who{display:inline-flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--acc);padding:6px 16px;border-radius:99px;font-size:14px;margin-top:12px;animation:pop .6s ease both}
+.crown{background:linear-gradient(135deg,#8a6d1b,#FEE75C);color:#3a2f00;font-weight:800;padding:3px 12px;border-radius:99px;font-size:12px;animation:pulse2 2s infinite}
+@keyframes pulse2{0%,100%{box-shadow:0 0 0 0 rgba(254,231,92,.5)}50%{box-shadow:0 0 0 7px rgba(254,231,92,0)}}
+.live{display:inline-flex;align-items:center;gap:6px;background:#12351f;color:var(--good);border:1px solid #1f6b3a;padding:4px 12px;border-radius:99px;font-size:13px;margin-top:10px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--good);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(87,242,135,.6)}50%{box-shadow:0 0 0 8px rgba(87,242,135,0)}}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:22px 0}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--txt);padding:10px 16px;border-radius:12px;cursor:pointer;font-size:14px;transition:.25s;animation:pop .5s ease both}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.tab:hover{transform:translateY(-2px);border-color:var(--acc)}
+.tab.on{background:linear-gradient(135deg,var(--acc),var(--acc2));border-color:transparent;box-shadow:0 6px 22px rgba(88,101,242,.45)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px}
+.card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:18px;animation:rise .6s ease both;animation-delay:calc(var(--i,0)*.07s);transition:.25s}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.card:hover{transform:translateY(-4px);border-color:var(--acc2);box-shadow:0 10px 30px rgba(235,69,158,.18)}
+.card .e{font-size:28px;animation:bounce 2.4s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.card .n{font-size:28px;font-weight:800;margin:6px 0 2px}
+.card .l{color:var(--dim);font-size:13px}
+.panel{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px;animation:rise .5s ease both}
+.panel h2{margin-bottom:14px;font-size:19px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+input,select,textarea{background:#0e1320;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:14px;outline:none;transition:.2s}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(88,101,242,.25)}
+button{background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;cursor:pointer;transition:.2s}
+button:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(88,101,242,.4)}
+button:active{transform:scale(.97)}
+button.ghost{background:transparent;border:1px solid var(--line)}
+button.good{background:linear-gradient(135deg,#2ea86a,#57F287)}
+button.bad{background:linear-gradient(135deg,#b03234,#ED4245)}
+button.sm{padding:6px 12px;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{color:var(--dim);text-align:left;padding:10px;border-bottom:1px solid var(--line);font-weight:600}
+td{padding:10px;border-bottom:1px solid #1c2338}
+tr{animation:fadein .4s ease both}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+tr:hover td{background:rgba(88,101,242,.08)}
+.bar{height:10px;background:#0e1320;border-radius:99px;overflow:hidden;min-width:120px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2),var(--gold));border-radius:99px;animation:grow 1s ease both}
+@keyframes grow{from{width:0}}
+.chip{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.c-open{background:#12351f;color:var(--good)} .c-claimed{background:#3d2f07;color:var(--gold)}
+.c-done{background:#222c44;color:var(--dim)} .c-pending{background:#3d2f07;color:var(--gold)}
+.c-approved{background:#12351f;color:var(--good)} .c-rejected{background:#3d1a1a;color:var(--bad)}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.item{background:#0e1320;border:1px solid var(--line);border-radius:14px;padding:14px;animation:pop .4s ease both;transition:.2s}
+.item:hover{border-color:var(--gold);transform:translateY(-3px)}
+.item .cost{color:var(--gold);font-weight:800}
+.muted{color:var(--dim);font-size:13px}
+.badge{display:inline-block;background:#222c44;border:1px solid var(--line);border-radius:99px;padding:4px 12px;margin:3px;font-size:13px;animation:pop .4s ease both}
+.qrow{background:#0e1320;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;animation:rise .4s ease both}
+.logs{background:#05070c;border:1px solid var(--line);border-radius:12px;padding:14px;font-family:monospace;font-size:12px;max-height:380px;overflow-y:auto;white-space:pre-wrap}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card2);border:1px solid var(--acc);padding:12px 22px;border-radius:12px;transition:.35s;z-index:99;opacity:0;max-width:90vw}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+#lock{display:none;text-align:center;padding:80px 20px}
+#lock .big{font-size:70px;animation:bounce 2s infinite}
+canvas{max-height:300px}
+footer{text-align:center;color:var(--dim);margin-top:30px;font-size:13px}
+.sec{display:none}.sec.on{display:block;animation:fadein .35s ease}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:#0e1320}::-webkit-scrollbar-thumb{background:linear-gradient(var(--acc),var(--acc2));border-radius:99px}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+<span class="flo" style="top:12%;left:6%">🤖</span><span class="flo" style="top:22%;right:8%;animation-delay:-2s">🏆</span>
+<span class="flo" style="top:60%;left:3%;animation-delay:-4s">🪙</span><span class="flo" style="bottom:14%;right:5%;animation-delay:-1s">🔥</span>
+<span class="flo" style="bottom:30%;left:12%;animation-delay:-3s">🎮</span><span class="flo" style="top:45%;right:12%;animation-delay:-5s">✨</span>
+
+<div id="lock"><div class="big">🔒</div><h2>Bad or expired link</h2><p class="muted">Run <b>/dashboard</b> in Discord for a fresh magic link ✨</p></div>
+
+<div class="wrap" id="app" style="display:none">
+<header>
+  <h1>🤖 Glyte Dashboard 📊</h1>
+  <div class="sub">Auto-logged-in via Discord — this link knows it's you ✨</div>
+  <div><span class="who" id="who">👤 …</span></div>
+  <div><span class="live"><span class="dot"></span>LIVE · <span id="today"></span></span></div>
+</header>
+
+<div class="tabs" id="tabs"></div>
+
+<!-- 🙋 ME -->
+<div class="sec" id="s-me">
+  <div class="panel"><h2 id="meTitle">🙋 Hey!</h2>
+    <div class="bar" style="margin-bottom:6px"><i id="meBar" style="width:0%"></i></div>
+    <p class="muted" id="meLvl"></p>
+    <div class="grid" id="meCards" style="margin-top:14px"></div>
+    <h2 style="margin-top:8px">🏅 My badges</h2><div id="meBadges"></div>
+  </div>
+</div>
+
+<!-- 🗓️ MY DAYS -->
+<div class="sec" id="s-medays">
+  <div class="panel"><h2>🗓️ My attendance <span id="meAttPct" class="muted"></span></h2>
+    <div class="row"><select id="meAttDays"><option value="7">Last 7 days</option><option value="14" selected>Last 14 days</option><option value="30">Last 30 days</option></select>
+    <button onclick="loadMyAtt()">🔄 Load</button></div>
+    <div id="meAttList"></div>
+  </div>
+</div>
+
+<!-- 🗺️ QUESTS -->
+<div class="sec" id="s-meq">
+  <div class="panel"><h2>🗺️ My quests today</h2><div id="meQuests"></div></div>
+</div>
+
+<!-- 🏪 SHOP -->
+<div class="sec" id="s-shop">
+  <div class="panel"><h2>🏪 Shop <span id="shopBal" class="muted"></span></h2><div class="shop" id="shopGrid"></div></div>
+  <div class="panel" id="shopAdminBox" style="display:none"><h2>➕ Add / update item 👑</h2>
+    <div class="row"><input id="shId" placeholder="id (e.g. pizza)"><input id="shName" placeholder="🍕 Name">
+    <input id="shCost" type="number" placeholder="Cost 🪙" style="width:120px">
+    <input id="shDesc" placeholder="Description" style="flex:1;min-width:200px"><button onclick="shopAdd()">➕ Save</button></div>
+  </div>
+  <div class="panel"><h2>🎒 My inventory</h2><div id="bagList"></div></div>
+</div>
+
+<!-- 🌴 MY LEAVES -->
+<div class="sec" id="s-meleave">
+  <div class="panel"><h2>🌴 My leaves</h2><div id="myLeaveList"></div></div>
+  <div class="panel"><h2>➕ Apply for leave</h2>
+    <div class="row"><input id="lvDays" type="number" value="1" style="width:90px"><input id="lvFrom" type="date">
+    <input id="lvReason" placeholder="Reason 📝" style="flex:1;min-width:200px"><button onclick="leaveApply()">📝 Apply</button></div>
+  </div>
+</div>
+
+<!-- ADMIN TABS -->
+<div class="sec" id="s-ov">
+  <div class="grid" id="statcards"></div>
+  <div class="panel"><h2>💬📊 Last 7 days</h2><canvas id="chActivity"></canvas></div>
+  <div class="panel"><h2>🌙 Today's presence</h2><canvas id="chPresence"></canvas></div>
+  <div class="panel"><h2>⚡ Quick actions</h2>
+    <div class="row"><button onclick="doEod()">🌙 Post EOD now</button><button class="ghost" onclick="loadAdmin()">🔄 Refresh admin</button></div>
+  </div>
+</div>
+
+<div class="sec" id="s-board">
+  <div class="panel"><h2>🏆 Leaderboard</h2>
+    <div class="row"><select id="bKey"><option value="xp">✨ XP</option><option value="coins">🪙 Coins</option>
+      <option value="messages">💬 Messages</option><option value="voice_seconds">🎙️ Voice</option>
+      <option value="checkins">✅ Check-ins</option><option value="reactions_added">⭐ Reactions</option></select>
+      <button onclick="loadBoard()">🔄 Load</button></div>
+    <div id="boardTbl"></div>
+  </div>
+  <div class="panel"><h2>🏁 Season <span id="seasonLbl"></span></h2>
+    <div class="row"><input id="seasonMonth" placeholder="YYYY-MM"><button onclick="loadSeason()">🔄 Load</button></div>
+    <div id="seasonTbl"></div>
+  </div>
+</div>
+
+<div class="sec" id="s-att">
+  <div class="panel"><h2>👥 Team attendance</h2>
+    <div class="row"><select id="attDays"><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30">Last 30 days</option></select>
+    <button onclick="loadAtt()">🔄 Load</button></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>👤 Member</th><th>✅ Present</th><th>📊</th><th>🎙️ Voice</th><th>🌴 Leave</th><th>🔥 Streak</th></tr></thead><tbody id="attBody"></tbody></table></div>
+  </div>
+  <div class="panel"><h2>🧍 Standups</h2>
+    <div class="row"><input id="stDate" type="date"><button onclick="loadStandups()">🔄 Load</button></div>
+    <div id="stList"></div>
+  </div>
+</div>
+
+<div class="sec" id="s-leave">
+  <div class="panel"><h2>🌴 Leaves — approve / reject 👑</h2>
+    <div class="row"><button class="sm" onclick="loadLeaves('pending')">⏳ Pending</button>
+    <button class="sm ghost" onclick="loadLeaves('approved')">✅ Approved</button>
+    <button class="sm ghost" onclick="loadLeaves('rejected')">❌ Rejected</button>
+    <button class="sm ghost" onclick="loadLeaves('all')">📋 All</button></div>
+    <div id="leaveList"></div>
+  </div>
+</div>
+
+<div class="sec" id="s-rew">
+  <div class="panel"><h2>🎖️ Level → role rewards 👑</h2><div id="rewList"></div>
+    <div class="row" style="margin-top:12px"><input id="rwLvl" type="number" placeholder="Level" style="width:100px">
+    <input id="rwRole" placeholder="Role ID" style="width:220px"><button onclick="rewardSet()">➕ Map</button></div>
+    <p class="muted">💡 Role ID: Server Settings → Roles → right-click → Copy ID (Developer Mode on).</p>
+  </div>
+</div>
+
+<div class="sec" id="s-bounty">
+  <div class="panel"><h2>🎯 Bounties</h2><div id="bountyList"></div></div>
+  <div class="panel"><h2>➕ Post bounty 👑</h2>
+    <div class="row"><input id="boTitle" placeholder="Title" style="flex:1;min-width:180px">
+    <input id="boCoins" type="number" placeholder="Coins 🪙" style="width:120px">
+    <input id="boDesc" placeholder="Details" style="flex:1;min-width:200px"><button onclick="bountyPost()">🎯 Post</button></div>
+  </div>
+</div>
+
+<div class="sec" id="s-coins">
+  <div class="panel"><h2>🪙 Give coins 👑</h2>
+    <div class="row"><select id="coinMember" style="min-width:200px"></select>
+    <input id="coinAmt" type="number" placeholder="Amount (+/-)" style="width:140px"><button onclick="giveCoins()">💸 Send</button></div>
+  </div>
+</div>
+
+<div class="sec" id="s-brain">
+  <div class="panel"><h2>🧠 Self-improvement engine 👑</h2>
+    <div class="grid" id="brainCards"></div>
+    <h2>🗺️ Quest completion (7d)</h2><div id="brainQuests"></div>
+    <h2 style="margin-top:14px">💡 Suggestions</h2><div id="brainSugg"></div>
+    <h2 style="margin-top:14px">🎯 Auto-tunes</h2><div id="brainTunes"></div>
+    <h2 style="margin-top:14px">📬 Feedback</h2><div id="brainFb"></div>
+    <div class="row" style="margin-top:12px"><button class="ghost" onclick="loadBrain()">🔄 Refresh</button></div>
+  </div>
+</div>
+
+<div class="sec" id="s-logs">
+  <div class="panel"><h2>📜 Live bot logs 👑</h2>
+    <div class="row"><button class="ghost sm" onclick="loadLogs()">🔄 Refresh</button><span class="muted">auto-refreshes every 10s ⏱️</span></div>
+    <div class="logs" id="botLogs">…</div>
+  </div>
+  <div class="panel"><h2>👁️ Dashboard access log 👑</h2><div id="accessTbl"></div></div>
+</div>
+
+<footer>Made with 💜 · ☕ · and too many <b>/checkin</b> streaks 🔥 · Glyte Bot 🤖</footer>
+</div>
+<div id="toast"></div>
+
+<script>
+const TOKEN = new URLSearchParams(location.search).get('token') || '';
+let ME = null, chA = null, chP = null, logTimer = null;
+const medals = ['🥇','🥈','🥉'];
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600); }
+async function api(path, method='GET', body){
+  const url = path + (path.includes('?')?'&':'?') + 'token=' + encodeURIComponent(TOKEN);
+  const r = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body: body?JSON.stringify(body):undefined});
+  const j = await r.json().catch(()=>({ok:false}));
+  if(r.status===401){ document.getElementById('app').style.display='none'; document.getElementById('lock').style.display='block'; throw 0; }
+  if(!j.ok) toast('❌ ' + (j.error||'failed'));
+  return j;
+}
+const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDur = s => { s=+s||0; const h=Math.floor(s/3600), m=Math.floor(s%3600/60); return h?`${h}h ${m}m`:(m?`${m}m ${s%60}s`:`${s}s`); };
+function countUp(el, to){ const t0=performance.now(), dur=900;
+  (function f(t){ const p=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-p,3);
+    el.textContent=Math.round(to*e).toLocaleString(); if(p<1) requestAnimationFrame(f); })(t0); }
+
+/* tabs (role-aware) */
+function buildTabs(){
+  const personal = [['s-me','🙋 Me'],['s-medays','🗓️ My Days'],['s-meq','🗺️ Quests'],['s-shop','🏪 Shop'],['s-meleave','🌴 My Leaves']];
+  const admin = [['s-ov','🌙 Overview'],['s-board','🏆 Ranks'],['s-att','👥 Team'],['s-leave','✅ Leaves'],['s-rew','🎖️ Rewards'],['s-bounty','🎯 Bounties'],['s-coins','🪙 Coins'],['s-brain','🧠 Insights'],['s-logs','📜 Logs']];
+  const list = ME.is_admin ? [...personal, ...admin] : personal;
+  const el = document.getElementById('tabs'); el.innerHTML = '';
+  list.forEach(([id,label],i)=>{
+    const b=document.createElement('button'); b.className='tab'+(i===0?' on':''); b.style.setProperty('--i',i); b.textContent=label;
+    b.onclick=()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+      document.querySelectorAll('.sec').forEach(x=>x.classList.remove('on')); document.getElementById(id).classList.add('on');
+      if(id==='s-logs' && !logTimer) logTimer=setInterval(loadLogs, 10000); };
+    el.appendChild(b);
+  });
+  document.getElementById('s-me').classList.add('on');
+}
+
+/* 🙋 ME */
+async function loadMe(){
+  const j = await api('/api/me'); if(!j.ok) return;
+  ME = j;
+  document.getElementById('who').innerHTML = `👤 ${esc(j.name)} · auto-logged-in via Discord ✨` + (j.is_admin ? ' <span class="crown">👑 ADMIN</span>' : '');
+  document.getElementById('meTitle').textContent = `🙋 Hey ${j.name}! — Lv ${j.level} 📶`;
+  document.getElementById('meBar').style.width = Math.round(100*j.into/j.need) + '%';
+  document.getElementById('meLvl').textContent = `${j.into}/${j.need} XP to Lv ${j.level+1} · 🏁 season XP: ${j.season_xp}`;
+  const cards = [['🪙',j.coins,'Coins'],['🔥',j.streak,'Day streak'],['✅',j.checkins,'Check-ins'],['💬',j.messages,'Messages'],['🎙️',fmtDur(j.voice_seconds),'Voice'],['🙌',j.kudos,'Kudos']];
+  document.getElementById('meCards').innerHTML = cards.map((c,i)=>`<div class="card" style="--i:${i}"><div class="e">${c[0]}</div><div class="n">${c[1].toLocaleString?.()??c[1]}</div><div class="l">${c[2]}</div></div>`).join('');
+  document.getElementById('meBadges').innerHTML = j.badges.length ? j.badges.map(b=>`<span class="badge">🏅 ${esc(b)}</span>`).join('') : '<p class="muted">No badges yet — go earn some! 🌱</p>';
+  buildTabs();
+}
+/* 🗓️ MY DAYS */
+async function loadMyAtt(){
+  const days = document.getElementById('meAttDays').value;
+  const j = await api('/api/my_attendance?days='+days); if(!j.ok) return;
+  document.getElementById('meAttPct').textContent = `· ${j.present}/${j.days} days 🎯`;
+  document.getElementById('meAttList').innerHTML = j.lines.map(l=>`<div class="qrow">${l.mark} <b>${l.date}</b></div>`).join('');
+}
+/* 🗺️ QUESTS */
+async function loadMyQuests(){
+  if(!ME) await loadMe(); if(!ME) return;
+  document.getElementById('meQuests').innerHTML = ME.quests.map(q=>{
+    const pct = Math.round(100*q.progress/q.target);
+    return `<div class="qrow"><b>${esc(q.name)}</b> — ${q.progress}/${q.target}
+      <div class="bar" style="margin:8px 0"><i style="width:${pct}%"></i></div>
+      <span class="muted">+${q.xp} ✨ +${q.coins} 🪙</span>
+      ${q.claimed ? ' <span class="chip c-done">claimed ✅</span>' : (q.done ? ` <button class="sm good" onclick="claimQuest('${q.id}')">🎉 Claim!</button>` : '')}</div>`; }).join('');
+}
+async function claimQuest(id){
+  const j = await api('/api/quest_claim_self','POST',{quest_id:id}); if(!j.ok) return;
+  toast(`🎉 +${j.xp} XP, +${j.coins} 🪙`); await loadMe(); loadMyQuests();
+}
+/* 🏪 SHOP + 🎒 */
+async function loadShop(){
+  const j = await api('/api/shop'); if(!j.ok) return;
+  const admin = ME && ME.is_admin;
+  document.getElementById('shopAdminBox').style.display = admin ? 'block' : 'none';
+  if(ME) document.getElementById('shopBal').textContent = `· balance: ${ME.coins} 🪙`;
+  document.getElementById('shopGrid').innerHTML = j.rows.map(it=>
+    `<div class="item"><b>${esc(it.name)}</b><br><span class="muted">${esc(it.desc)}</span><br>
+     <span class="cost">${it.cost} 🪙</span> <code>${esc(it.id)}</code><br>
+     <div class="row" style="margin:8px 0 0"><button class="sm" onclick="buySelf('${esc(it.id)}')">🛍️ Buy</button>
+     ${admin?`<button class="sm bad" onclick="shopDel('${esc(it.id)}')">🗑️</button>`:''}</div></div>`).join('');
+  const b = await api('/api/my_inventory'); if(b.ok)
+    document.getElementById('bagList').innerHTML = b.rows.length ? b.rows.map(it=>`<span class="badge">🎒 ${esc(it.name)}</span>`).join('') : '<p class="muted">Empty — visit the shop! 🏪</p>';
+}
+async function buySelf(id){
+  const j = await api('/api/buy_self','POST',{item_id:id}); if(!j.ok) return;
+  toast('🛍️ Bought! Balance: '+j.balance+' 🪙'); await loadMe(); loadShop();
+}
+async function shopAdd(){
+  const j = await api('/api/shop_add','POST',{id:document.getElementById('shId').value,name:document.getElementById('shName').value,cost:document.getElementById('shCost').value,description:document.getElementById('shDesc').value});
+  if(!j.ok) return; toast('🏪 Saved!'); loadShop();
+}
+async function shopDel(id){ if(!confirm('Delete '+id+'?')) return;
+  const j = await api('/api/shop_delete','POST',{id}); if(!j.ok) return; toast('🗑️ Deleted'); loadShop(); }
+/* 🌴 MY LEAVES */
+async function loadMyLeaves(){
+  const j = await api('/api/my_leaves'); if(!j.ok) return;
+  document.getElementById('myLeaveList').innerHTML = j.rows.length ? j.rows.map(r=>
+    `<div class="qrow">🌴 <b>${esc(r.from)}</b> ×${r.days}d <span class="chip c-${r.status}">${r.status}</span><br><span class="muted">📝 ${esc(r.reason)}</span></div>`).join('')
+    : '<p class="muted">No leaves yet — enjoy work 😄</p>';
+  document.getElementById('lvFrom').value = new Date().toISOString().slice(0,10);
+}
+async function leaveApply(){
+  const j = await api('/api/leave_apply_self','POST',{days:document.getElementById('lvDays').value,from:document.getElementById('lvFrom').value,reason:document.getElementById('lvReason').value});
+  if(!j.ok) return; toast('📝 Leave applied!'); loadMyLeaves();
+}
+
+/* ---- ADMIN ---- */
+async function loadOverview(){
+  const j = await api('/api/overview'); if(!j.ok) return;
+  document.getElementById('today').textContent = '📅 ' + j.today;
+  const cards = [['👥','members','Members'],['✅','present','Present today'],['🎙️','voice_only','Voice only'],['🌴','pending_leaves','Pending leaves'],['🪙','coins','Coins out there']];
+  document.getElementById('statcards').innerHTML = cards.map((c,i)=>`<div class="card" style="--i:${i}"><div class="e">${c[0]}</div><div class="n" id="st-${c[1]}">0</div><div class="l">${c[2]}</div></div>`).join('');
+  cards.forEach(c=>countUp(document.getElementById('st-'+c[1]), j[c[1]]));
+  if(chA) chA.destroy(); if(chP) chP.destroy();
+  Chart.defaults.color='#8b93b0'; Chart.defaults.borderColor='#2a3350';
+  chA = new Chart(document.getElementById('chActivity'),{type:'bar',
+    data:{labels:j.series.map(s=>s.date),datasets:[{label:'💬 Messages',data:j.series.map(s=>s.messages),backgroundColor:'#5865F2',borderRadius:8},{label:'🎙️ Voice min',data:j.series.map(s=>s.voice_min),backgroundColor:'#EB459E',borderRadius:8}]},
+    options:{plugins:{legend:{labels:{boxWidth:12}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
+  chP = new Chart(document.getElementById('chPresence'),{type:'doughnut',
+    data:{labels:['✅ Present','🎙️ Voice only','❓ Rest'],datasets:[{data:[j.present,j.voice_only,Math.max(0,j.members-j.present-j.voice_only)],backgroundColor:['#57F287','#5865F2','#2a3350'],borderWidth:0}]},
+    options:{plugins:{legend:{position:'bottom',labels:{boxWidth:12}}}}});
+}
+function boardRows(rows, voice){
+  return rows.map((r,i)=>`<tr><td>${medals[i]||'#'+(i+1)}</td><td><b>${esc(r.name)}</b></td><td>${voice?fmtDur(r.score):Number(r.score).toLocaleString()}</td></tr>`).join('');
+}
+async function loadBoard(){
+  const key=document.getElementById('bKey').value;
+  const j=await api('/api/leaderboard?key='+key+'&limit=10'); if(!j.ok) return;
+  document.getElementById('boardTbl').innerHTML=`<table><thead><tr><th>🏅</th><th>👤 Member</th><th>📊 Score</th></tr></thead><tbody>${boardRows(j.rows,key==='voice_seconds')}</tbody></table>`;
+}
+async function loadSeason(){
+  const m=document.getElementById('seasonMonth').value.trim();
+  const j=await api('/api/season'+(m?('?month='+m):'')); if(!j.ok) return;
+  document.getElementById('seasonLbl').textContent=j.month;
+  document.getElementById('seasonTbl').innerHTML=j.rows.length?`<table><thead><tr><th>🏅</th><th>👤</th><th>✨ XP</th><th>💬</th><th>🎙️</th></tr></thead><tbody>`+j.rows.map((r,i)=>`<tr><td>${medals[i]||'#'+(i+1)}</td><td><b>${esc(r.name)}</b></td><td>${r.xp}</td><td>${r.messages}</td><td>${fmtDur(r.voice_min*60)}</td></tr>`).join('')+`</tbody></table>`:'<p class="muted">No activity yet 🌱</p>';
+}
+async function loadAtt(){
+  const days=document.getElementById('attDays').value;
+  const j=await api('/api/attendance?days='+days); if(!j.ok) return;
+  document.getElementById('attBody').innerHTML=j.rows.map(r=>{const pct=Math.round(100*r.present/days);
+    return `<tr><td><b>${esc(r.name)}</b></td><td>${r.present}/${days}</td><td><div class="bar"><i style="width:${pct}%"></i></div></td><td>🎙️ ${r.voice_days}</td><td>🌴 ${r.leaves}</td><td>🔥 ${r.streak}</td></tr>`;}).join('')||'<tr><td colspan="6" class="muted">Nobody tracked yet 🌱</td></tr>';
+}
+async function loadStandups(){
+  const d=document.getElementById('stDate').value;
+  const j=await api('/api/standups'+(d?('?date='+d):'')); if(!j.ok) return;
+  document.getElementById('stList').innerHTML=j.rows.length?j.rows.map(r=>`<div class="item" style="margin-bottom:10px"><b>🧍 ${esc(r.name)}</b><br>↩️ ${esc(r.yesterday)}<br>➡️ ${esc(r.today)}<br>🚧 ${esc(r.blockers)}</div>`).join(''):'<p class="muted">No standups 🧍</p>';
+}
+async function loadLeaves(status='pending'){
+  const j=await api('/api/leaves?status='+status); if(!j.ok) return;
+  document.getElementById('leaveList').innerHTML=j.rows.length?j.rows.map(r=>
+    `<div class="item" style="margin-bottom:10px"><b>🌴 ${esc(r.name)}</b> <span class="chip c-${r.status}">${r.status}</span><br>
+     <span class="muted">${esc(r.from)} · ×${r.days}d</span><br>📝 ${esc(r.reason)}
+     ${r.status==='pending'?`<div class="row" style="margin:8px 0 0"><button class="sm good" onclick="decideLeave('${r.id}',true)">✅ Approve</button><button class="sm bad" onclick="decideLeave('${r.id}',false)">❌ Reject</button></div>`:''}</div>`).join(''):'<p class="muted">Nothing here 🎉</p>';
+}
+async function decideLeave(id,approve){
+  const j=await api('/api/leave_decide','POST',{id,approve}); if(!j.ok) return;
+  toast(approve?'✅ Approved!':'❌ Rejected'); loadLeaves('pending');
+}
+async function loadRewards(){
+  const j=await api('/api/rewards'); if(!j.ok) return;
+  const rows=Object.entries(j.rows).sort((a,b)=>a[0]-b[0]);
+  document.getElementById('rewList').innerHTML=rows.length?rows.map(([lvl,rid])=>`<div class="row"><span>📶 Lv <b>${lvl}</b> → <code>${esc(rid)}</code></span> <button class="sm bad" onclick="rewardDel('${lvl}')">🗑️</button></div>`).join(''):'<p class="muted">No level rewards yet 🎖️</p>';
+}
+async function rewardSet(){
+  const j=await api('/api/reward_set','POST',{level:document.getElementById('rwLvl').value,role_id:document.getElementById('rwRole').value});
+  if(!j.ok) return; toast('🎖️ Mapped!'); loadRewards();
+}
+async function rewardDel(level){
+  const j=await api('/api/reward_delete','POST',{level}); if(!j.ok) return; toast('🗑️ Removed'); loadRewards();
+}
+async function loadBounties(){
+  const j=await api('/api/bounties'); if(!j.ok) return;
+  document.getElementById('bountyList').innerHTML=j.rows.length?j.rows.map(r=>
+    `<div class="item" style="margin-bottom:10px"><b>🎯 ${esc(r.title)}</b> <span class="chip c-${r.status}">${r.status}</span><br>
+     💰 <b>${r.coins} 🪙</b> · <span class="muted">${esc(r.description)}</span>${r.claimer?`<br>🤝 <b>${esc(r.claimer)}</b>`:''}
+     ${r.status==='claimed'?`<div class="row" style="margin:8px 0 0"><button class="sm good" onclick="bountyApprove('${r.id}')">💰 Approve & pay</button></div>`:''}</div>`).join(''):'<p class="muted">No bounties 🎯</p>';
+}
+async function bountyPost(){
+  const j=await api('/api/bounty_post','POST',{title:document.getElementById('boTitle').value,coins:document.getElementById('boCoins').value,description:document.getElementById('boDesc').value});
+  if(!j.ok) return; toast('🎯 Posted!'); loadBounties();
+}
+async function bountyApprove(id){
+  const j=await api('/api/bounty_approve','POST',{id}); if(!j.ok) return; toast('💰 Paid!'); loadBounties();
+}
+async function loadMembers(){
+  const j=await api('/api/members'); if(!j.ok) return;
+  document.getElementById('coinMember').innerHTML=j.rows.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('');
+}
+async function giveCoins(){
+  const j=await api('/api/give_coins','POST',{user_id:document.getElementById('coinMember').value,amount:document.getElementById('coinAmt').value});
+  if(!j.ok) return; toast('💸 Done! Balance: '+j.balance+' 🪙');
+}
+async function doEod(){
+  const j=await api('/api/eod','POST',{}); if(!j.ok) return; toast('🌙 EOD posted!');
+}
+async function loadBrain(){
+  const j=await api('/api/insights'); if(!j.ok) return;
+  document.getElementById('brainCards').innerHTML=[['👥',j.users,'Members'],['✅',j.checkins_7,'Check-ins/7d'],['🙌',j.kudos_7,'Kudos/7d'],['🧍',j.standups_7,'Standups/7d']]
+    .map((c,i)=>`<div class="card" style="--i:${i}"><div class="e">${c[0]}</div><div class="n">${c[1]}</div><div class="l">${c[2]}</div></div>`).join('');
+  document.getElementById('brainQuests').innerHTML=Object.entries(j.quests).map(([id,q])=>
+    `<div class="qrow">${q.name} — <b>${Math.round(q.rate*100)}%</b> completion · target <b>${q.target}</b>
+     <div class="bar" style="margin-top:8px"><i style="width:${Math.min(100,Math.round(q.rate*100))}%"></i></div></div>`).join('');
+  document.getElementById('brainSugg').innerHTML=j.suggestions.map(s=>`<div class="qrow">${esc(s)}</div>`).join('');
+  document.getElementById('brainTunes').innerHTML=j.tune_log.length?j.tune_log.map(a=>`<div class="qrow">🎯 <code>${a.at.slice(0,10)}</code> <b>${esc(a.quest)}</b>: ${a.old}→<b>${a.new}</b> (rate ${a.rate})</div>`).join(''):'<p class="muted">No auto-tunes yet — the bot tunes daily 🧠</p>';
+  document.getElementById('brainFb').innerHTML=j.feedback.length?j.feedback.map(f=>`<div class="qrow">📬 <b>${esc(f.by)}</b>: ${esc(f.text)}</div>`).join(''):'<p class="muted">No feedback yet — try /feedback 💌</p>';
+}
+async function loadLogs(){
+  const j=await api('/api/bot_logs?n=150'); if(j.ok){ const el=document.getElementById('botLogs'); el.textContent=j.rows.join('\n')||'(empty)'; el.scrollTop=el.scrollHeight; }
+  const a=await api('/api/access_log'); if(a.ok)
+    document.getElementById('accessTbl').innerHTML=a.rows.length?`<table><thead><tr><th>👤 Who</th><th>🕐 When (UTC)</th><th>🌐 IP</th></tr></thead><tbody>`+a.rows.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${esc(r.at.slice(0,19).replace('T',' '))}</td><td><code>${esc(r.ip)}</code></td></tr>`).join('')+`</tbody></table>`:'<p class="muted">No visits yet 👀</p>';
+}
+
+async function loadAdmin(){ await loadOverview(); await loadBoard(); await loadSeason(); await loadAtt(); await loadLeaves('pending'); await loadShop(); await loadRewards(); await loadBounties(); await loadMembers(); await loadBrain(); await loadLogs(); }
+(async function init(){
+  if(!TOKEN){ document.getElementById('lock').style.display='block'; return; }
+  try{
+    document.getElementById('stDate').value=new Date().toISOString().slice(0,10);
+    document.getElementById('app').style.display='block';
+    await loadMe();
+    await loadMyAtt(); await loadMyQuests(); await loadShop(); await loadMyLeaves();
+    if(ME && ME.is_admin) await loadAdmin(); else setInterval(async()=>{ await loadMe(); loadMyQuests(); }, 60000);
+    if(ME && ME.is_admin) setInterval(loadOverview, 60000);
+  }catch(e){ /* 401 handled */ }
+})();
+</script>
+</body>
+</html>
