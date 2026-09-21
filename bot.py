@@ -75,6 +75,9 @@ mongo_kwargs = {
     "serverSelectionTimeoutMS": 8000,
     "connectTimeoutMS": 8000,
     "socketTimeoutMS": 20000,
+    "minPoolSize": 10,
+    "maxPoolSize": 50,
+    "maxIdleTimeMS": 45000,
 }
 if ca_file and ("mongodb+srv://" in MONGO_URI or "ssl=true" in MONGO_URI.lower() or "tls=true" in MONGO_URI.lower()):
     mongo_kwargs["tlsCAFile"] = ca_file
@@ -205,7 +208,16 @@ def bump_season(u: dict, xp: int = 0, messages: int = 0, voice: int = 0):
     row["voice"] += voice
 
 
+_config_cache: Optional[dict] = None
+_config_cache_ts: float = 0
+CONFIG_CACHE_TTL = 30.0  # seconds to cache global configuration in memory
+
+
 async def get_config() -> dict:
+    global _config_cache, _config_cache_ts
+    now = time.time()
+    if _config_cache is not None and (now - _config_cache_ts) < CONFIG_CACHE_TTL:
+        return _config_cache
     doc = await config_col.find_one({"_id": "global"})
     if doc is None:
         doc = {"_id": "global", "rewards": {}, "shop": SHOP_DEFAULT}
@@ -213,10 +225,15 @@ async def get_config() -> dict:
     for k, v in [("rewards", {}), ("shop", SHOP_DEFAULT)]:
         if k not in doc:
             doc[k] = v
+    _config_cache = doc
+    _config_cache_ts = now
     return doc
 
 
 async def save_config(doc: dict):
+    global _config_cache, _config_cache_ts
+    _config_cache = doc
+    _config_cache_ts = time.time()
     await config_col.replace_one({"_id": "global"}, doc, upsert=True)
 
 
@@ -844,7 +861,7 @@ async def checkin(interaction: discord.Interaction):
     mark_dirty(interaction.user.id)
     track("checkins")
     track("commands", "checkin")
-    await flush_cache()
+    asyncio.create_task(flush_cache())
     new_lvl = calc_level(u["xp"])
     if new_lvl > old_lvl:
         await apply_level_roles(interaction.user, new_lvl)
@@ -1442,13 +1459,14 @@ async def leave_apply(interaction: discord.Interaction,
 
 @bot.tree.command(name="my_leaves", description="Show your leave requests")
 async def my_leaves(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
     rows = [d async for d in leaves_col.find(
         {"user_id": str(interaction.user.id)}).sort("created_at", -1).limit(10)]
     if not rows:
-        await interaction.response.send_message("No leaves yet.", ephemeral=True)
+        await interaction.followup.send("No leaves yet.", ephemeral=True)
         return
     lines = [f"`{r['_id']}` {r['from']} ×{r['days']}d — **{r['status']}** — {r['reason']}" for r in rows]
-    await interaction.response.send_message("\n".join(lines), ephemeral=True)
+    await interaction.followup.send("\n".join(lines), ephemeral=True)
 
 
 @bot.tree.command(name="leave_list", description="List pending leaves (managers)")
@@ -1456,12 +1474,13 @@ async def leave_list(interaction: discord.Interaction):
     if not interaction.user.guild_permissions.manage_guild:
         await interaction.response.send_message("❌ Manage Server needed.", ephemeral=True)
         return
+    await interaction.response.defer(ephemeral=True)
     rows = [d async for d in leaves_col.find({"status": "pending"}).sort("created_at", -1).limit(15)]
     if not rows:
-        await interaction.response.send_message("No pending leaves. 🎉", ephemeral=True)
+        await interaction.followup.send("No pending leaves. 🎉", ephemeral=True)
         return
     lines = [f"`{r['_id']}` <@{r['user_id']}> {r['from']} ×{r['days']}d — {r['reason']}" for r in rows]
-    await interaction.response.send_message("\n".join(lines))
+    await interaction.followup.send("\n".join(lines), ephemeral=True)
 
 
 @bot.tree.command(name="leave_decide", description="Approve/reject a leave (managers)")
@@ -1470,19 +1489,20 @@ async def leave_decide(interaction: discord.Interaction, leave_id: str, approve:
     if not interaction.user.guild_permissions.manage_guild:
         await interaction.response.send_message("❌ Manage Server needed.", ephemeral=True)
         return
+    await interaction.response.defer()
     try:
         oid = ObjectId(leave_id)
     except Exception:
-        await interaction.response.send_message("Bad leave id.", ephemeral=True)
+        await interaction.followup.send("Bad leave id.", ephemeral=True)
         return
     res = await leaves_col.update_one(
         {"_id": oid, "status": "pending"},
         {"$set": {"status": "approved" if approve else "rejected",
                   "decided_by": str(interaction.user.id)}})
     if not res.modified_count:
-        await interaction.response.send_message("Not found or already decided.", ephemeral=True)
+        await interaction.followup.send("Not found or already decided.", ephemeral=True)
         return
-    await interaction.response.send_message(f"✅ Leave {leave_id} {'approved' if approve else 'rejected'}.")
+    await interaction.followup.send(f"✅ Leave {leave_id} {'approved' if approve else 'rejected'}.")
 
 
 # ---- admin: rewards/economy ----
@@ -1492,21 +1512,23 @@ async def reward_add(interaction: discord.Interaction, level: int, role: discord
     if not interaction.user.guild_permissions.manage_guild:
         await interaction.response.send_message("❌ Manage Server needed.", ephemeral=True)
         return
+    await interaction.response.defer(ephemeral=True)
     cfg = await get_config()
     cfg.setdefault("rewards", {})[str(level)] = role.id
     await save_config(cfg)
-    await interaction.response.send_message(f"✅ Level {level} → {role.mention}")
+    await interaction.followup.send(f"✅ Level {level} → {role.mention}", ephemeral=True)
 
 
 @bot.tree.command(name="reward_list", description="Show level-role rewards")
 async def reward_list(interaction: discord.Interaction):
+    await interaction.response.defer()
     cfg = await get_config()
     rewards = cfg.get("rewards", {})
     if not rewards:
-        await interaction.response.send_message("No level rewards yet. Use /reward_add.", ephemeral=True)
+        await interaction.followup.send("No level rewards yet. Use /reward_add.", ephemeral=True)
         return
     lines = [f"Lv **{lvl}** → <@&{rid}>" for lvl, rid in sorted(rewards.items(), key=lambda x: int(x[0]))]
-    await interaction.response.send_message("\n".join(lines))
+    await interaction.followup.send("\n".join(lines))
 
 
 @bot.tree.command(name="give_coins", description="Give coins (admin)")
@@ -1515,10 +1537,11 @@ async def give_coins(interaction: discord.Interaction, member: discord.Member, a
     if not interaction.user.guild_permissions.manage_guild:
         await interaction.response.send_message("❌ Manage Server needed.", ephemeral=True)
         return
+    await interaction.response.defer()
     u = await get_user(member.id)
     u["coins"] += amount
     mark_dirty(member.id)
-    await interaction.response.send_message(f"🪙 Gave {amount} coins to {member.mention}. Balance: {u['coins']}")
+    await interaction.followup.send(f"🪙 Gave {amount} coins to {member.mention}. Balance: {u['coins']}")
 
 
 @bot.tree.command(name="export", description="Export data (mods only)")
@@ -1673,11 +1696,12 @@ async def kudos(interaction: discord.Interaction, member: discord.Member, reason
     if member.bot:
         await interaction.response.send_message("❌ Bots don't need kudos. 🤖", ephemeral=True)
         return
+    await interaction.response.defer()
     g = await get_user(interaction.user.id)
     day = today_str()
     kd = g.setdefault("kudos_day", {})
     if kd.get(day, 0) >= 3:
-        await interaction.response.send_message("⏳ Kudos limit reached (3/day).", ephemeral=True)
+        await interaction.followup.send("⏳ Kudos limit reached (3/day).", ephemeral=True)
         return
     r = await get_user(member.id)
     r["kudos_received"] += 1
@@ -1691,7 +1715,7 @@ async def kudos(interaction: discord.Interaction, member: discord.Member, reason
     mark_dirty(member.id)
     track("kudos")
     track("commands", "kudos")
-    await interaction.response.send_message(embed=discord.Embed(
+    await interaction.followup.send(embed=discord.Embed(
         title="🙌 Kudos!",
         description=f"{interaction.user.mention} → {member.mention} (+20 🪙)\n> {reason}",
         color=0xFEE75C))
@@ -1707,9 +1731,10 @@ async def bounty_post(interaction: discord.Interaction, title: str, coins: int,
     if coins <= 0:
         await interaction.response.send_message("Coins must be positive.", ephemeral=True)
         return
+    await interaction.response.defer()
     u = await get_user(interaction.user.id)
     if u["coins"] < coins:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"❌ You have {u['coins']} 🪙, need {coins}.", ephemeral=True)
         return
     u["coins"] -= coins
@@ -1718,23 +1743,24 @@ async def bounty_post(interaction: discord.Interaction, title: str, coins: int,
         "title": title, "description": description or "—", "coins": coins,
         "poster_id": str(interaction.user.id), "status": "open", "claimer_id": None,
         "created_at": datetime.now(timezone.utc).isoformat()})
-    await interaction.response.send_message(
+    await interaction.followup.send(
         f"🎯 Bounty posted! `{res.inserted_id}` **{title}** — {coins} 🪙 (escrowed)")
 
 
 @bot.tree.command(name="bounty_list", description="Show open bounties")
 async def bounty_list(interaction: discord.Interaction):
+    await interaction.response.defer()
     rows = [d async for d in bounties_col.find(
         {"status": {"$in": ["open", "claimed"]}}).sort("created_at", -1).limit(10)]
     if not rows:
-        await interaction.response.send_message("No open bounties. 🎯", ephemeral=True)
+        await interaction.followup.send("No open bounties. 🎯", ephemeral=True)
         return
     lines = []
     for r in rows:
         extra = f" · claimed by <@{r['claimer_id']}>" if r["status"] == "claimed" else ""
         lines.append(f"`{r['_id']}` **{r['title']}** — {r['coins']} 🪙 · *{r['status']}*{extra}"
                      f"\n_{r['description']}_")
-    await interaction.response.send_message("\n\n".join(lines))
+    await interaction.followup.send("\n\n".join(lines))
 
 
 class BountyDecisionView(discord.ui.View):
