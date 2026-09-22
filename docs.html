@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Glyte Bot Docs — Setup, Commands & Guide</title>
+<meta name="description" content="Complete guide to installing, configuring, and using Glyte Bot. Covers Discord bot creation, MongoDB Atlas, Docker setup, commands, and dashboard.">
+<meta name="keywords" content="Glyte Bot docs, Discord bot setup, Discord bot guide, attendance bot, self-host Discord bot, Docker Discord bot">
+<link rel="canonical" href="https://glyte-bot.duckdns.org/docs">
+<meta property="og:title" content="Glyte Bot Docs — Setup, Commands & Guide">
+<meta property="og:description" content="Complete guide to installing, configuring, and using Glyte Bot.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://glyte-bot.duckdns.org/docs">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070b16;--card:rgba(18,24,43,.74);--card2:rgba(26,34,58,.85);--line:rgba(120,150,255,.18);--txt:#eef3ff;--dim:#9aa8cf;--acc:#5865F2;--acc2:#EB459E;--good:#57F287;--gold:#FEE75C;--code:#b9c8ff;--radius:18px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--txt);font-family:'Inter',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 15% 10%,rgba(88,101,242,.22),transparent 35%),radial-gradient(circle at 85% 15%,rgba(235,69,158,.16),transparent 32%),radial-gradient(circle at 50% 95%,rgba(87,242,135,.1),transparent 35%);z-index:-2}
+body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px);pointer-events:none;z-index:-1;opacity:.35}
+.wrap{width:min(920px,94vw);margin:0 auto;padding:28px 0 70px}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+.brand{font-weight:900;font-size:1.2rem;background:linear-gradient(90deg,#5865F2,#EB459E,#57F287);-webkit-background-clip:text;background-clip:text;color:transparent}
+nav{display:flex;gap:18px;align-items:center}
+nav a{color:var(--dim);text-decoration:none;font-size:.9rem}
+nav a:hover{color:var(--txt)}
+h1{font-size:clamp(2rem,5vw,3.2rem);letter-spacing:-.04em;line-height:1.1;margin-bottom:10px}
+h2{font-size:clamp(1.4rem,3vw,2rem);margin-top:42px;margin-bottom:12px;background:linear-gradient(90deg,#5865F2,#EB459E);-webkit-background-clip:text;background-clip:text;color:transparent}
+h3{font-size:1.15rem;margin:18px 0 8px;color:#d8e0ff}
+p{color:var(--dim);line-height:1.75;max-width:820px}
+.subtitle{color:var(--dim);font-size:1.05rem;line-height:1.7}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin:24px 0}
+.toc h3{margin:0 0 10px}
+.toc ol{padding-left:18px;display:grid;gap:5px}
+.toc a{color:#b9c8ff;text-decoration:none}
+.toc a:hover{text-decoration:underline}
+code,pre{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86rem;line-height:1.6}
+code{background:rgba(88,101,242,.13);padding:2px 6px;border-radius:6px;color:var(--code)}
+pre{background:rgba(0,0,0,.45);border:1px solid var(--line);border-radius:12px;padding:16px;overflow-x:auto;color:#dbe7ff;margin:12px 0}
+pre code{background:transparent;padding:0}
+table{width:100%;border-collapse:collapse;margin:14px 0}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line)}
+th{color:#b9c8ff;font-weight:700}
+td{color:var(--dim);vertical-align:top}
+tr:hover{background:rgba(255,255,255,.03)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:16px 0;backdrop-filter:blur(12px)}
+.guide{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin:14px 0}
+.guide h3{margin-top:0}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:8px 0}
+summary{cursor:pointer;font-weight:700}
+details p{color:var(--dim)}
+ul{line-height:1.8;padding-left:20px}
+li{color:var(--dim)}
+.tag{display:inline-block;background:rgba(88,101,242,.18);color:#b9c8ff;border:1px solid rgba(120,150,255,.25);padding:3px 8px;border-radius:999px;font-size:.8rem;margin-right:5px}
+footer{margin-top:70px;padding-top:20px;border-top:1px solid var(--line);color:var(--dim);font-size:.85rem;text-align:center}
+@media(max-width:640px){.wrap{padding-top:18px} nav{width:100%;justify-content:center}}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","name":"Glyte Bot Docs","description":"Complete guide to installing, configuring, and using Glyte Bot.","url":"https://glyte-bot.duckdns.org/docs","author":{"@type":"Organization","name":"GlyteTech"},"publisher":{"@type":"Organization","name":"GlyteTech","logo":{"@type":"ImageObject","url":"https://glyte-bot.duckdns.org/"},"name":"GlyteTech"}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"HowTo","name":"Install and run Glyte Bot","description":"Create a Discord bot, configure MongoDB Atlas, clone the repo, and launch with Docker Compose.","step":[{"@type":"HowToStep","name":"Create a Discord Bot","text":"Go to Discord Developer Portal, create a New Application, switch to Bot tab, and create a bot user."},{"@type":"HowToStep","name":"Enable Privileged Intents","text":"Enable Server Members Intent and Message Content Intent under Privileged Gateway Intents."},{"@type":"HowToStep","name":"Copy the Repository","text":"Clone https://github.com/Buriatma/attendance-discord-bot.git and copy .env.example to .env."},{"@type":"HowToStep","name":"Create MongoDB Atlas Cluster","text":"Create a free-tier Atlas cluster, create a database user, and copy the SRV connection string into MONGO_URI."},{"@type":"HowToStep","name":"Set Environment Variables","text":"Fill DISCORD_TOKEN, MONGO_URI, MONGO_DB, XP_PER_MSG, and other variables in .env."},{"@type":"HowToStep","name":"Run with Docker","text":"Run docker compose up -d --build to build and start the bot and dashboard."}]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does Glyte Bot need a local MongoDB server?","acceptedAnswer":{"@type":"Answer","text":"No. It is configured for MongoDB Atlas using the MONGO_URI variable. You do not need a local MongoDB service."}},{"@type":"Question","name":"What permissions does the bot need?","acceptedAnswer":{"@type":"Answer","text":"When inviting the bot, grant Send Messages, Read Message History, Manage Messages, Use Slash Commands, and Embed Links. Enable Server Members Intent and Message Content Intent."}},{"@type":"Question","name":"How do I open the dashboard?","acceptedAnswer":{"@type":"Answer","text":"Run /dashboard in Discord to get a private token link, then open https://glyte-bot.duckdns.org/dash/ with that token."}},{"@type":"Question","name":"Can I change commands and rewards?",acceptedAnswer":{"@type":"Answer","text":"Yes. Quests, shop items, rewards, and many settings are configurable in the code or database."}}]}
+</script>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand">📚 Glyte Bot Docs</div>
+  <nav><a href="/">Home</a><a href="/dash/">Dashboard</a><a href="https://github.com/Buriatma/attendance-discord-bot">GitHub ↗</a></nav>
+</header>
+<h1>Glyte Bot — Setup Guide</h1>
+<p class="subtitle">Everything you need to install, configure, and self-host Glyte Bot for your Discord server. Commands, troubleshooting, and deployment docs all in one place.</p>
+<nav class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#create-bot">Create the Discord Bot</a></li>
+    <li><a href="#mongo">Create MongoDB Atlas</a></li>
+    <li><a href="#install">Install with Docker</a></li>
+    <li><a href="#env">Environment Variables</a></li>
+    <li><a href="#invite">Invite the Bot</a></li>
+    <li><a href="#commands">Commands</a></li>
+    <li><a href="#dashboard">Dashboard</a></li>
+    <li><a href="#troubleshoot">Troubleshooting</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ol>
+</nav>
+
+<section id="overview" class="guide">
+  <h2>1. Overview</h2>
+  <p><span class="tag">Open Source</span><span class="tag">Docker</span><span class="tag">Discord.py</span><span class="tag">MongoDB Atlas</span></p>
+  <p>Glyte Bot is a modular Discord bot built for communities, teams, and servers that want built-in attendance tracking, gamification, coins, quests, shop, moderation, and a live dashboard. It runs as a Docker container and stores data in MongoDB Atlas.</p>
+</section>
+
+<section id="features">
+  <h2>2. Features</h2>
+  <div class="card"><h3>✅ Daily Check-ins</h3><p>Track member attendance, calculate streaks, and reward consistency.</p></div>
+  <div class="card"><h3>🎮 Gamification</h3><p>XP, levels, quests, and role rewards keep engagement high.</p></div>
+  <div class="card"><h3>🪙 Coins & Shop</h3><p>Members earn coins for activity and spend them on custom rewards.</p></div>
+  <div class="card"><h3>📊 Live Dashboard</h3><p>View overview stats, leaderboards, attendance, leaves, and insights.</p></div>
+  <div class="card"><h3>🛡️ Moderation</h3><p>Moderation tools to manage your community.</p></div>
+  <div class="card"><h3>🚀 Easy Self-Hosting</h3><p>Docker Compose, environment-based config, and clear setup docs.</p></div>
+</section>
+
+<section id="create-bot" class="guide">
+  <h2>3. Create the Discord Bot</h2>
+  <ol>
+    <li>Open the <a href="https://discord.com/developers/applications">Discord Developer Portal</a>.</li>
+    <li>Click <strong>New Application</strong> and give it a name.</li>
+    <li>Go to the <strong>Bot</strong> tab and click <strong>Add Bot</strong>.</li>
+    <li>Under <strong>Privileged Gateway Intents</strong>, enable <strong>Server Members Intent</strong> and <strong>Message Content Intent</strong>.</li>
+    <li>Copy the bot token under the <strong>Token</strong> section and keep it secret.</li>
+  </ol>
+</section>
+
+<section id="mongo" class="guide">
+  <h2>4. Create MongoDB Atlas</h2>
+  <p>Glyte Bot uses MongoDB Atlas, not a local MongoDB server.</p>
+  <ul>
+    <li>Create a free-tier cluster at <a href="https://www.mongodb.com/atlas">MongoDB Atlas</a>.</li>
+    <li>Create a database user with read/write access.</li>
+    <li>Allow access from <code>0.0.0.0/0</code> for the VPS IP or use Atlas network access rules.</li>
+    <li>Copy the <strong>SRV connection string</strong> from <em>Database &gt; Connect</em>.</li>
+  </ul>
+</section>
+
+<section id="install" class="guide">
+  <h2>5. Install with Docker</h2>
+  <pre><code>git clone https://github.com/Buriatma/attendance-discord-bot.git
+cd attendance-discord-bot
+cp .env.example .env
+docker compose up -d --build</code></pre>
+  <p>After the build completes, the bot and dashboard start on port <code>8080</code>. Check logs with <code>docker compose logs bot</code>.</p>
+</section>
+
+<section id="env" class="guide">
+  <h2>6. Environment Variables</h2>
+  <table>
+    <tr><th>Variable</th><th>Description</th><th>Required</th></tr>
+    <tr><td><code>DISCORD_TOKEN</code></td><td>Bot token from Discord Developer Portal.</td><td>Yes</td></tr>
+    <tr><td><code>MONGO_URI</code></td><td>MongoDB Atlas SRV connection string.</td><td>Yes</td></tr>
+    <tr><td><code>MONGO_DB</code></td><td>Database name.</td><td>Yes</td></tr>
+    <tr><td><code>DASHBOARD_PUBLIC_URL</code></td><td>Public URL for the dashboard.</td><td>Recommended</td></tr>
+    <tr><td><code>XP_PER_MSG</code></td><td>XP earned per message.</td><td>No</td></tr>
+    <tr><td><code>MSG_COOLDOWN_S</code></td><td>Cooldown in seconds between messages.</td><td>No</td></tr>
+    <tr><td><code>FLUSH_EVERY_S</code></td><td>How often cache flushes.</td><td>No</td></tr>
+  </table>
+</section>
+
+<section id="invite" class="guide">
+  <h2>7. Invite the Bot</h2>
+  <p>Generate an OAuth2 invite URL with <strong>bot</strong> scope and these permissions: <code>Send Messages</code>, <code>Read Message History</code>, <code>Manage Messages</code>, <code>Use Slash Commands</code>, <code>Embed Links</code>. Then add it to your server.</p>
+</section>
+
+<section id="commands" class="guide">
+  <h2>8. Commands</h2>
+  <table>
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td><code>/checkin</code></td><td>Daily attendance check-in.</td></tr>
+    <tr><td><code>/daily</code></td><td>Claim daily coins.</td></tr>
+    <tr><td><code>/balance</code></td><td>Check your coin balance.</td></tr>
+    <tr><td><code>/shop</code></td><td>Open the rewards shop.</td></tr>
+    <tr><td><code>/leaderboard</code></td><td>View top members.</td></tr>
+    <tr><td><code>/help</code></td><td>Show the full command guide.</td></tr>
+    <tr><td><code>/dashboard</code></td><td>Get a dashboard auth link.</td></tr>
+  </table>
+</section>
+
+<section id="dashboard" class="guide">
+  <h2>9. Dashboard</h2>
+  <p>The dashboard is available at <code>https://glyte-bot.duckdns.org/dash/</code> after running <code>/dashboard</code> in Discord. It shows overview stats, leaderboards, attendance, leaves, bounties, standups, and insights.</p>
+</section>
+
+<section id="troubleshoot" class="guide">
+  <h2>10. Troubleshooting</h2>
+  <ul>
+    <li><strong>Bot not responding:</strong> Run <code>docker compose logs bot</code> and check that the dashboard is running on the correct port.</li>
+    <li><strong>MongoDB connection error:</strong> Verify <code>MONGO_URI</code> and Atlas network access.</li>
+    <li><strong>Slash commands missing:</strong> Restart the bot so Discord can sync commands.</li>
+    <li><strong>Dashboard shows "Bad link":</strong> Run <code>/dashboard</code> again to generate a fresh link.</li>
+  </ul>
+</section>
+
+<section id="faq" class="guide">
+  <h2>11. FAQ</h2>
+  <details><summary>Do I need a local MongoDB server?</summary><p>No. Glyte Bot uses MongoDB Atlas through <code>MONGO_URI</code>.</p></details>
+  <details><summary>Can I run this on a free VPS?</summary><p>Yes, Docker Compose is supported on small VPS instances, but a MongoDB Atlas free tier is required for storage.</p></details>
+  <details><summary>How do I update the bot?</summary><p>Pull the latest code, build, and restart: <code>git pull && docker compose up -d --build</code>.</p></details>
+</section>
+<footer>Made by GlyteTech · <a href="/" style="color:#b9c8ff">Home</a> · <a href="https://github.com/Buriatma/attendance-discord-bot" style="color:#b9c8ff">GitHub</a></footer>
+</div>
+</body>
+</html>

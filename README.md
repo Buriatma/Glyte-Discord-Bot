@@ -19,6 +19,13 @@
 
 ---
 
+## Docs & Landing
+
+- Landing page: https://glyte-bot.duckdns.org/
+- Full docs: https://glyte-bot.duckdns.org/docs
+- Authenticated dashboard: https://glyte-bot.duckdns.org/dash/
+
+
 ## ✨🌟 Features at a glance
 
 | | | |

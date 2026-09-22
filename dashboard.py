@@ -533,6 +533,34 @@ async def api_insights(request):
     return web.json_response({"ok": True, **ins})
 
 
+
+async def landing_page(request):
+    path = BASE_DIR / "landing.html"
+    if not path.exists():
+        return web.Response(text="landing.html missing", status=500)
+    return web.FileResponse(path)
+
+
+async def docs_page(request):
+    path = BASE_DIR / "docs.html"
+    if not path.exists():
+        return web.Response(text="docs.html missing", status=500)
+    return web.FileResponse(path)
+
+
+async def robots_page(request):
+    path = BASE_DIR / "robots.txt"
+    if not path.exists():
+        return web.Response(text="robots.txt missing", status=500)
+    return web.FileResponse(path)
+
+
+async def sitemap_page(request):
+    path = BASE_DIR / "sitemap.xml"
+    if not path.exists():
+        return web.Response(text="sitemap.xml missing", status=500)
+    return web.FileResponse(path)
+
 async def start_dashboard(bot: discord.Client):
     global _dash_runner, _bot_instance
     _bot_instance = bot
@@ -540,6 +568,10 @@ async def start_dashboard(bot: discord.Client):
         return
     app = web.Application()
     app.router.add_get("/dash/", dash_page)
+    app.router.add_get("/", landing_page)
+    app.router.add_get("/docs", docs_page)
+    app.router.add_get("/robots.txt", robots_page)
+    app.router.add_get("/sitemap.xml", sitemap_page)
     app.router.add_get("/api/overview", api_overview)
     app.router.add_get("/api/leaderboard", api_leaderboard)
     app.router.add_get("/api/season", api_season)

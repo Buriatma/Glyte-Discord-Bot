@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Glyte Bot — Discord Attendance, Gamification & Team Hub</title>
+<meta name="description" content="Glyte Bot is a powerful open-source Discord bot for attendance, daily check-ins, gamification, coins, shop, moderation, and live dashboards. Self-host it in minutes.">
+<meta name="keywords" content="Discord bot, attendance bot, gamification bot, Discord dashboard, team bot, Glyte Bot, open source Discord bot">
+<meta name="author" content="GlyteTech">
+<meta name="theme-color" content="#5865F2">
+<link rel="canonical" href="https://glyte-bot.duckdns.org/">
+<meta property="og:title" content="Glyte Bot — Discord Attendance & Team Hub">
+<meta property="og:description" content="Open-source Discord bot for attendance, gamification, shop, moderation, and live dashboards.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://glyte-bot.duckdns.org/">
+<meta property="og:image" content="https://media.giphy.com/media/3oKIPEqDGUULpEU0aQ/giphy.gif">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Glyte Bot — Discord Attendance & Team Hub">
+<meta name="twitter:description" content="Open-source Discord bot for attendance, gamification, shop, moderation, and live dashboards.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b16; --card:rgba(18,24,43,.72); --card2:rgba(26,34,58,.82); --line:rgba(120,150,255,.18);
+  --txt:#eef3ff; --dim:#9aa8cf; --acc:#5865F2; --acc2:#EB459E; --good:#57F287; --gold:#FEE75C;
+  --radius:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--txt);font-family:'Inter',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 20% 10%,rgba(88,101,242,.24),transparent 35%),radial-gradient(circle at 85% 20%,rgba(235,69,158,.18),transparent 32%),radial-gradient(circle at 50% 90%,rgba(87,242,135,.12),transparent 35%);z-index:-2}
+body::after{content:"";position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px);pointer-events:none;z-index:-1;opacity:.35}
+.container{width:min(1120px,92vw);margin:0 auto;padding:32px 0 64px}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:48px}
+.brand{font-weight:900;font-size:1.25rem;letter-spacing:-.03em;background:linear-gradient(90deg,#5865F2,#EB459E,#57F287);-webkit-background-clip:text;background-clip:text;color:transparent}
+nav{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+nav a{color:var(--dim);text-decoration:none;font-size:.9rem;transition:color .2s}
+nav a:hover{color:var(--txt)}
+.hero{text-align:center;padding:42px 0 34px;position:relative}
+.hero h1{font-size:clamp(2.4rem,7vw,5.4rem);line-height:1.02;letter-spacing:-.05em;font-weight:900;background:linear-gradient(90deg,#5865F2,#EB459E,#FEE75C,#57F287,#5865F2);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 8s linear infinite}
+@keyframes shine{to{background-position:300% 0}}
+.hero p{max-width:720px;margin:18px auto 0;color:var(--dim);font-size:clamp(1rem,2.3vw,1.2rem);line-height:1.7}
+.badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+.badge{border:1px solid var(--line);background:var(--card);padding:7px 12px;border-radius:999px;font-size:.82rem;color:#cdd8ff;backdrop-filter:blur(12px)}
+.cta{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:26px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 20px;border-radius:14px;font-weight:800;text-decoration:none;transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn.primary{background:linear-gradient(90deg,#5865F2,#EB459E);color:#fff;box-shadow:0 10px 30px rgba(88,101,242,.35)}
+.btn.ghost{border:1px solid var(--line);color:var(--txt);background:rgba(255,255,255,.04)}
+.hero-gif{width:min(520px,88vw);border-radius:20px;margin:26px auto 0;box-shadow:0 20px 60px rgba(88,101,242,.25);border:1px solid var(--line)}
+.section{margin-top:54px}
+.section h2{font-size:clamp(1.7rem,4vw,2.7rem);letter-spacing:-.04em;margin-bottom:10px}
+.section > p{color:var(--dim);max-width:760px;line-height:1.65}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;backdrop-filter:blur(14px);transition:transform .2s,border-color .2s}
+.card:hover{transform:translateY(-3px);border-color:rgba(120,150,255,.4)}
+.card h3{font-size:1.05rem;margin-bottom:8px}
+.card p{color:var(--dim);font-size:.92rem;line-height:1.55}
+.icon{font-size:1.7rem;display:block;margin-bottom:10px;animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.commands{margin-top:22px;display:grid;gap:10px}
+.cmd{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.cmd code{color:#b9c8ff;background:rgba(88,101,242,.15);padding:3px 8px;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.cmd span{color:var(--dim);font-size:.92rem}
+.faq{margin-top:16px;display:grid;gap:10px}
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.faq summary{cursor:pointer;font-weight:700}
+.faq p{margin-top:10px;color:var(--dim);line-height:1.6}
+footer{margin-top:70px;padding-top:24px;border-top:1px solid var(--line);color:var(--dim);font-size:.85rem;text-align:center}
+@media(max-width:640px){.container{padding-top:24px}.hero{padding-top:20px}.btn{width:100%;justify-content:center}}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Glyte Bot","applicationCategory":"BusinessApplication","operatingSystem":"Discord","description":"Open-source Discord bot for attendance, gamification, shop, moderation, and live dashboards.","url":"https://glyte-bot.duckdns.org/","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is Glyte Bot?","acceptedAnswer":{"@type":"Answer","text":"Glyte Bot is an open-source Discord bot for attendance, daily check-ins, gamification, coins, shop, moderation, and live dashboards."}},{"@type":"Question","name":"Can I self-host Glyte Bot?","acceptedAnswer":{"@type":"Answer","text":"Yes. Glyte Bot runs with Docker, MongoDB Atlas, and a Discord bot token. Full setup docs are available at /docs."}},{"@type":"Question","name":"Does Glyte Bot need MongoDB?","acceptedAnswer":{"@type":"Answer","text":"Yes, it uses MongoDB Atlas for durable storage. No local MongoDB server is required."}}]}
+</script>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="brand">🚀 Glyte Bot</div>
+  <nav><a href="/docs">📚 Docs</a><a href="/dash/">📊 Dashboard</a><a href="https://github.com/Buriatma/attendance-discord-bot">GitHub ↗</a></nav>
+</header>
+<section class="hero">
+  <div class="badges"><span class="badge">✨ Open Source</span><span class="badge">🛠️ Self-hostable</span><span class="badge">📊 Live Dashboard</span></div>
+  <h1>Attendance, rewards & team energy.<br>One Discord bot.</h1>
+  <p>Glyte Bot turns any Discord server into a living workspace: daily check-ins, streaks, XP, coins, quests, shop, moderation, and real-time dashboards.</p>
+  <div class="cta">
+    <a class="btn primary" href="/docs">⚡ Read the Docs</a>
+    <a class="btn ghost" href="/dash/">📊 Open Dashboard</a>
+  </div>
+  <img class="hero-gif" src="https://media.giphy.com/media/3oKIPEqDGUULpEU0aQ/giphy.gif" alt="Glyte Bot celebration animation">
+</section>
+<section class="section">
+  <h2>🔥 Why teams use Glyte Bot</h2>
+  <p>Everything your server needs to stay active, accountable, and fun — without leaving Discord.</p>
+  <div class="grid">
+    <div class="card"><span class="icon">✅</span><h3>Daily Check-ins</h3><p>Track attendance, streaks, and daily activity with one simple command.</p></div>
+    <div class="card"><span class="icon">🎮</span><h3>Gamification</h3><p>XP, levels, quests, and rewards make participation feel like a game.</p></div>
+    <div class="card"><span class="icon">🪙</span><h3>Coins & Shop</h3><p>Earn coins and spend them on custom rewards, boosts, and perks.</p></div>
+    <div class="card"><span class="icon">📊</span><h3>Live Dashboard</h3><p>See attendance, leaderboards, coins, and insights in one place.</p></div>
+    <div class="card"><span class="icon">🛡️</span><h3>Moderation</h3><p>Keep your community safe with built-in moderation tools.</p></div>
+    <div class="card"><span class="icon">🚀</span><h3>Easy Setup</h3><p>Docker Compose, MongoDB Atlas, and clear docs. Launch in minutes.</p></div>
+  </div>
+</section>
+<section class="section">
+  <h2>📋 Command preview</h2>
+  <p>Start with the essentials. Full command list lives in the docs.</p>
+  <div class="commands">
+    <div class="cmd"><code>/checkin</code><span>Daily attendance</span></div>
+    <div class="cmd"><code>/daily</code><span>Claim daily coins</span></div>
+    <div class="cmd"><code>/balance</code><span>Check your coin balance</span></div>
+    <div class="cmd"><code>/shop</code><span>Open rewards shop</span></div>
+    <div class="cmd"><code>/leaderboard</code><span>Top members</span></div>
+    <div class="cmd"><code>/help</code><span>Full command guide</span></div>
+  </div>
+</section>
+<section class="section">
+  <h2>❓ Quick FAQ</h2>
+  <div class="faq">
+    <details><summary>How do I install Glyte Bot?</summary><p>Clone the repo, set up a Discord bot token and MongoDB Atlas URI in <code>.env</code>, then run <code>docker compose up -d --build</code>.</p></details>
+    <details><summary>Does it need a local MongoDB server?</summary><p>No. Glyte Bot is designed for MongoDB Atlas, so you can host it anywhere with Docker.</p></details>
+    <details><summary>Can I customize commands and rewards?</summary><p>Yes. The repo includes configurable commands, quests, shop items, and dashboard settings.</p></details>
+  </div>
+</section>
+<footer>🚀 Built by GlyteTech · <a href="/docs" style="color:#b9c8ff">Docs</a> · <a href="https://github.com/Buriatma/attendance-discord-bot" style="color:#b9c8ff">GitHub</a></footer>
+</div>
+</body>
+</html>
