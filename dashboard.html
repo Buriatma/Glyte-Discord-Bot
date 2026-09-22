@@ -139,6 +139,25 @@ h1 {
   box-shadow: 0 0 12px rgba(254, 231, 92, 0.4);
 }
 
+.admin-btn {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #FEE75C, #FFB84D);
+  color: #2b2100;
+  border: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 0 16px rgba(254, 231, 92, 0.35);
+  transition: transform .2s, box-shadow .2s;
+}
+.admin-btn:hover { transform: translateY(-2px); box-shadow: 0 0 22px rgba(254, 231, 92, 0.55); }
+.admin-btn.on { display: inline-flex; }
+
 .live {
   display: inline-flex;
   align-items: center;
@@ -553,6 +572,7 @@ footer {
   <div class="header-badges">
     <span class="who" id="who">👤 Connecting…</span>
     <span class="live"><span class="dot"></span>LIVE · <span id="today"></span></span>
+    <button class="admin-btn" id="adminBtn" onclick="showAdmin()">👑 Full Control</button>
   </div>
 </header>
 
@@ -817,7 +837,7 @@ footer {
 </div>
 
 <footer>
-  Made with 💜 by <b>GlyteTech</b> · 🌐 <a href="https://www.glyte.tech" target="_blank" style="color:var(--acc);text-decoration:none">glyte.tech</a> · 📧 info@glyte.tech<br>
+  Made with 💜 by <b>GlyteTech</b> · 🌐 <a href="https://www.glyte.tech" target="_blank" style="color:var(--acc);text-decoration:none">glyte.tech</a> · 📚 <a href="https://glyte-bot.duckdns.org/docs" target="_blank" style="color:var(--acc);text-decoration:none">docs</a> · 📧 info@glyte.tech<br>
   Attendance · Activity · Gamification · Discord Slash Hub 🚀
 </footer>
 </div>
@@ -912,6 +932,15 @@ function buildTabs(){
   document.getElementById('s-me').classList.add('on');
 }
 
+function showAdmin(){
+  if(!ME || !ME.is_admin){ return; }
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('.sec').forEach(x => x.classList.remove('on'));
+  const target = document.getElementById('s-ov');
+  if(target) target.classList.add('on');
+  loadAdmin();
+}
+
 /* 🙋 Personal Hub */
 async function loadMe(){
   const j = await api('/api/me');
@@ -941,6 +970,7 @@ async function loadMe(){
     ? j.badges.map(b => `<span class="badge">🏅 ${esc(b)}</span>`).join('')
     : '<p class="muted">No badges yet — earn badges by checking in and completing quests! 🌱</p>';
   buildTabs();
+  document.getElementById('adminBtn').classList.toggle('on', !!j.is_admin);
 }
 
 /* 🗓️ My Attendance */

@@ -1,22 +1,7 @@
 services:
-  mongo:
-    image: mongo:7
-    restart: unless-stopped
-    volumes:
-      - mongo-data:/data/db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-bot}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-changeme}
-      MONGO_INITDB_DATABASE: ${MONGO_DB:-discord_bot}
-
   bot:
     build: .
     restart: unless-stopped
     env_file: .env
     ports:
-      - "${DASHBOARD_PORT:-8080}:8080"
-    depends_on:
-      - mongo
-
-volumes:
-  mongo-data:
+      - "8080:8080"

@@ -22,8 +22,9 @@
 ## Docs & Landing
 
 - Landing page: https://glyte-bot.duckdns.org/
-- Full docs: https://glyte-bot.duckdns.org/docs
+- Full wiki docs: https://glyte-bot.duckdns.org/docs
 - Authenticated dashboard: https://glyte-bot.duckdns.org/dash/
+- Admin control room: auto-appears when a Manage Server user runs `/dashboard`
 
 
 ## ✨🌟 Features at a glance
@@ -195,6 +196,8 @@ flowchart LR
 ## 📊🖥️ Web dashboard
 
 Anyone runs `/dashboard` in Discord → gets a **fresh random magic link** ✨ visible **only to them** (ephemeral reply). The link **is the login** — it's bound to their Discord identity, so the dashboard opens already knowing who they are 🙋 — no passwords, no OAuth screens.
+
+If the user has **Manage Server**, the dashboard shows a highlighted **👑 Full Control** button. That button opens the admin control room with full server control: overview, team grid, leaderboards, leave approvals, rewards, bounties, economy, AI insights, and logs.
 
 Dark-themed 🌑, animated ✨, emoji-loaded 🥳, live-updating 🔄:
 
